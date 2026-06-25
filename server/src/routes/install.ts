@@ -1,8 +1,6 @@
 import { Router, Request, Response } from 'express';
-import fs from 'fs';
-import path from 'path';
-import { config } from '../config';
 import { getApp } from '../services/storage';
+import { getPublicUrl, isR2Configured } from '../services/r2';
 
 const router = Router();
 
@@ -20,15 +18,13 @@ router.get('/install/:id', (req: Request, res: Response) => {
     return;
   }
 
-  const installDir = path.join(config.paths.install, id);
-  const indexPath = path.join(installDir, 'index.html');
-
-  if (!fs.existsSync(indexPath)) {
+  if (!app.manifestR2Key || !isR2Configured()) {
     res.status(404).send(generateNotFoundPage());
     return;
   }
 
-  res.sendFile(indexPath);
+  const url = getPublicUrl(app.manifestR2Key);
+  res.redirect(url);
 });
 
 function generateNotFoundPage(): string {

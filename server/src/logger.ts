@@ -1,7 +1,4 @@
 import winston from 'winston';
-import path from 'path';
-
-const logDir = path.resolve(__dirname, '..', 'logs');
 
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
@@ -12,30 +9,14 @@ export const logger = winston.createLogger({
   ),
   defaultMeta: { service: 'affsign' },
   transports: [
-    new winston.transports.File({
-      filename: path.join(logDir, 'error.log'),
-      level: 'error',
-      maxsize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    }),
-    new winston.transports.File({
-      filename: path.join(logDir, 'combined.log'),
-      maxsize: 10 * 1024 * 1024,
-      maxFiles: 5,
-    }),
-  ],
-});
-
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(
     new winston.transports.Console({
       format: winston.format.combine(
-        winston.format.colorize(),
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         winston.format.printf(({ timestamp, level, message, ...meta }) => {
           const metaStr = Object.keys(meta).length > 1 ? ` ${JSON.stringify(meta)}` : '';
           return `${timestamp} ${level}: ${message}${metaStr}`;
         })
       ),
-    })
-  );
-}
+    }),
+  ],
+});

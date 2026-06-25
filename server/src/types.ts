@@ -3,9 +3,9 @@ import { Request } from 'express';
 export interface AppData {
   id: string;
   originalName: string;
-  ipaPath: string;
-  signedPath?: string;
-  manifestPath?: string;
+  r2Key: string;
+  signedR2Key?: string;
+  manifestR2Key?: string;
   installUrl?: string;
   otaLink?: string;
   info?: AppInfo;

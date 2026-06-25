@@ -4,7 +4,7 @@ import { logger } from '../logger';
 
 const router = Router();
 
-router.delete('/app/:id', (req: Request, res: Response) => {
+router.delete('/app/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const app = getApp(id);
@@ -14,7 +14,7 @@ router.delete('/app/:id', (req: Request, res: Response) => {
       return;
     }
 
-    const deleted = deleteApp(id);
+    const deleted = await deleteApp(id);
     if (deleted) {
       res.json({ success: true, data: { message: 'App deleted successfully' } });
     } else {

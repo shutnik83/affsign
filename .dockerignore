@@ -1,0 +1,15 @@
+node_modules
+uploads
+signed
+*.ipa
+.env
+.git
+.gitignore
+README.md
+nginx.conf
+docker-compose.yml
+server/node_modules
+client/node_modules
+server/dist
+client/dist
+server/logs

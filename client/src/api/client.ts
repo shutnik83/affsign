@@ -28,7 +28,7 @@ export interface UploadResponse {
     type: string;
     info?: AppInfo;
     certificate?: CertificateInfo;
-    tempPath?: string;
+    r2Key?: string;
     originalName?: string;
   };
   error?: string;
@@ -102,14 +102,14 @@ export async function uploadFile(
 
 export async function signApp(
   appId: string,
-  p12Path: string,
+  p12Key: string,
   p12Password: string,
-  mobileProvisionPath: string
+  mobileProvisionKey: string
 ): Promise<SignResponse> {
   const response = await fetch(`${API_BASE}/sign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ appId, p12Path, p12Password, mobileProvisionPath }),
+    body: JSON.stringify({ appId, p12Key, p12Password, mobileProvisionKey }),
   });
   return response.json();
 }

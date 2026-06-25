@@ -1,16 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import path from 'path';
 import { config } from './config';
 import { logger } from './logger';
-import { initStorage, cleanupTempFiles, cleanupOldApps } from './services/storage';
+import { initStorage, cleanupOldApps } from './services/storage';
 import { uploadRouter } from './routes/upload';
 import { signRouter } from './routes/sign';
 import { installRouter } from './routes/install';
 import { downloadRouter } from './routes/download';
 import { appRouter } from './routes/app';
 import { historyRouter } from './routes/history';
+import { manifestRouter } from './routes/manifest';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -23,21 +23,23 @@ app.use(morgan('combined', {
   },
 }));
 
-app.use('/api/install', express.static(path.join(__dirname, '..', 'public', 'install')));
-
 app.use('/api', uploadRouter);
 app.use('/api', signRouter);
 app.use('/api', installRouter);
 app.use('/api', downloadRouter);
 app.use('/api', appRouter);
 app.use('/api', historyRouter);
+app.use('/api', manifestRouter);
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 app.use(errorHandler);
 
 initStorage();
 
 setInterval(() => {
-  cleanupTempFiles();
   cleanupOldApps();
 }, config.cleanupIntervalMs);
 

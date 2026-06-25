@@ -4,28 +4,27 @@ import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config';
 import { logger } from '../logger';
 import { AppData } from '../types';
+import { deleteFromR2 } from './r2';
 
 const apps = new Map<string, AppData>();
 
 export function initStorage(): void {
-  Object.values(config.paths).forEach((dir) => {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  });
-  logger.info('Storage directories initialized');
+  if (!fs.existsSync(config.paths.temp)) {
+    fs.mkdirSync(config.paths.temp, { recursive: true });
+  }
+  logger.info('Storage initialized');
 }
 
 export function generateId(): string {
   return uuidv4().replace(/-/g, '').substring(0, 16);
 }
 
-export function createApp(ipaPath: string, originalName: string): AppData {
+export function createApp(r2Key: string, originalName: string): AppData {
   const id = generateId();
   const app: AppData = {
     id,
     originalName,
-    ipaPath,
+    r2Key,
     status: 'uploaded',
   };
   apps.set(id, app);
@@ -43,28 +42,13 @@ export function updateApp(id: string, updates: Partial<AppData>): AppData | unde
   return app;
 }
 
-export function deleteApp(id: string): boolean {
+export async function deleteApp(id: string): Promise<boolean> {
   const app = apps.get(id);
   if (!app) return false;
 
-  const filesToDelete = [app.ipaPath, app.signedPath, app.manifestPath];
-  filesToDelete.forEach((filePath) => {
-    if (filePath && fs.existsSync(filePath)) {
-      try {
-        fs.unlinkSync(filePath);
-      } catch (err) {
-        logger.error(`Failed to delete file ${filePath}:`, err);
-      }
-    }
-  });
-
-  const installDir = path.join(config.paths.install, id);
-  if (fs.existsSync(installDir)) {
-    try {
-      fs.rmSync(installDir, { recursive: true, force: true });
-    } catch (err) {
-      logger.error(`Failed to delete install dir ${installDir}:`, err);
-    }
+  const keysToDelete = [app.r2Key, app.signedR2Key, app.manifestR2Key].filter(Boolean) as string[];
+  for (const key of keysToDelete) {
+    await deleteFromR2(key);
   }
 
   apps.delete(id);
@@ -77,23 +61,6 @@ export function getAllApps(): AppData[] {
     const bTime = b.signedAt || '';
     return bTime.localeCompare(aTime);
   });
-}
-
-export function cleanupTempFiles(): void {
-  const now = Date.now();
-  try {
-    const tempFiles = fs.readdirSync(config.paths.temp);
-    for (const file of tempFiles) {
-      const filePath = path.join(config.paths.temp, file);
-      const stat = fs.statSync(filePath);
-      if (now - stat.mtimeMs > config.fileMaxAgeMs) {
-        fs.unlinkSync(filePath);
-        logger.info(`Cleaned up old temp file: ${file}`);
-      }
-    }
-  } catch (err) {
-    logger.error('Error during temp cleanup:', err);
-  }
 }
 
 export function cleanupOldApps(): void {

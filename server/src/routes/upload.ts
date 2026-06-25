@@ -5,26 +5,13 @@ import path from 'path';
 import { config } from '../config';
 import { createApp } from '../services/storage';
 import { extractIpa, parseAppInfo } from '../services/ipaParser';
+import { uploadBufferToR2, generateR2Key, isR2Configured } from '../services/r2';
 import { logger } from '../logger';
 
 const router = Router();
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = config.paths.uploads;
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: config.maxFileSize },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['.ipa', '.p12', '.mobileprovision', '.provisionprofile'];
@@ -47,56 +34,80 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     const ext = path.extname(req.file.originalname).toLowerCase();
 
     if (ext === '.ipa') {
-      const app = createApp(req.file.path, req.file.originalname);
-
-      const tempExtractDir = path.join(config.paths.temp, `extract_${app.id}`);
-      fs.mkdirSync(tempExtractDir, { recursive: true });
+      const r2Key = generateR2Key('ipas', req.file.originalname);
+      const tempPath = path.join(config.paths.temp, `upload_${Date.now()}${ext}`);
 
       try {
-        extractIpa(req.file.path, tempExtractDir);
-        const appInfo = parseAppInfo(tempExtractDir);
-        const fileSize = fs.statSync(req.file.path).size;
-        appInfo.size = fileSize;
+        fs.mkdirSync(path.dirname(tempPath), { recursive: true });
+        fs.writeFileSync(tempPath, req.file.buffer);
 
-        app.info = appInfo;
+        const tempExtractDir = path.join(config.paths.temp, `extract_${Date.now()}`);
+        fs.mkdirSync(tempExtractDir, { recursive: true });
 
-        res.json({
-          success: true,
-          data: {
-            id: app.id,
-            type: 'ipa',
-            info: appInfo,
-          },
-        });
-      } catch (err) {
-        app.status = 'error';
-        app.error = err instanceof Error ? err.message : String(err);
-        res.status(400).json({
-          success: false,
-          error: `Failed to parse IPA: ${err instanceof Error ? err.message : String(err)}`,
-        });
-      } finally {
         try {
-          fs.rmSync(tempExtractDir, { recursive: true, force: true });
-        } catch {
-          // cleanup non-critical
+          extractIpa(tempPath, tempExtractDir);
+          const appInfo = parseAppInfo(tempExtractDir);
+          appInfo.size = req.file.size;
+
+          let finalR2Key = r2Key;
+          if (isR2Configured()) {
+            await uploadBufferToR2(req.file.buffer, r2Key, 'application/zip');
+          }
+
+          const app = createApp(finalR2Key, req.file.originalname);
+          app.info = appInfo;
+
+          res.json({
+            success: true,
+            data: {
+              id: app.id,
+              type: 'ipa',
+              info: appInfo,
+            },
+          });
+        } catch (err) {
+          res.status(400).json({
+            success: false,
+            error: `Failed to parse IPA: ${err instanceof Error ? err.message : String(err)}`,
+          });
+        } finally {
+          try {
+            fs.rmSync(tempExtractDir, { recursive: true, force: true });
+          } catch {}
+          try {
+            fs.unlinkSync(tempPath);
+          } catch {}
         }
+      } catch (err) {
+        logger.error('IPA upload error:', err);
+        res.status(500).json({
+          success: false,
+          error: err instanceof Error ? err.message : 'Upload failed',
+        });
       }
     } else if (ext === '.p12') {
+      const r2Key = generateR2Key('certs', req.file.originalname);
+      if (isR2Configured()) {
+        await uploadBufferToR2(req.file.buffer, r2Key, 'application/x-pkcs12');
+      }
       res.json({
         success: true,
         data: {
           type: 'p12',
-          tempPath: req.file.path,
+          r2Key,
           originalName: req.file.originalname,
         },
       });
     } else if (ext === '.mobileprovision' || ext === '.provisionprofile') {
+      const r2Key = generateR2Key('provisions', req.file.originalname);
+      if (isR2Configured()) {
+        await uploadBufferToR2(req.file.buffer, r2Key, 'application/octet-stream');
+      }
       res.json({
         success: true,
         data: {
           type: 'mobileprovision',
-          tempPath: req.file.path,
+          r2Key,
           originalName: req.file.originalname,
         },
       });

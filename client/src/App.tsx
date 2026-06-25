@@ -24,12 +24,12 @@ interface IPAData {
 }
 
 interface P12Data {
-  tempPath: string;
+  r2Key: string;
   originalName: string;
 }
 
 interface ProvisionData {
-  tempPath: string;
+  r2Key: string;
   originalName: string;
 }
 
@@ -82,7 +82,7 @@ export default function App() {
     try {
       const res = await uploadFile(file, (p) => setUploadProgress((prev) => ({ ...prev, p12: p })));
       if (res.success && res.data) {
-        setP12Data({ tempPath: res.data.tempPath!, originalName: res.data.originalName! });
+        setP12Data({ r2Key: res.data.r2Key!, originalName: res.data.originalName! });
       } else {
         setError(res.error || 'Failed to upload P12');
       }
@@ -98,7 +98,7 @@ export default function App() {
     try {
       const res = await uploadFile(file, (p) => setUploadProgress((prev) => ({ ...prev, provision: p })));
       if (res.success && res.data) {
-        setProvisionData({ tempPath: res.data.tempPath!, originalName: res.data.originalName! });
+        setProvisionData({ r2Key: res.data.r2Key!, originalName: res.data.originalName! });
       } else {
         setError(res.error || 'Failed to upload MobileProvision');
       }
@@ -129,7 +129,7 @@ export default function App() {
     setIsSigning(true);
     setError(null);
     try {
-      const res = await signApp(ipaData.id, p12Data.tempPath, p12Password, provisionData.tempPath);
+      const res = await signApp(ipaData.id, p12Data.r2Key, p12Password, provisionData.r2Key);
       if (res.success && res.data) {
         setSignResult({
           downloadUrl: res.data.downloadUrl,

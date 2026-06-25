@@ -5,17 +5,16 @@ RUN apk add --no-cache unzip p7zip
 WORKDIR /app
 
 COPY server/package*.json ./server/
-COPY client/package*.json ./client/
-COPY package*.json ./
+COPY client/package*.json ./
 
-RUN npm install
-RUN cd server && npm install
-RUN cd client && npm install
+RUN cd server && npm ci
+RUN cd client && npm ci
 
 COPY server/ ./server/
 COPY client/ ./client/
 COPY .env.example ./.env
 
+RUN cd server && npm run build
 RUN cd client && npm run build
 
 FROM node:20-alpine
@@ -25,13 +24,11 @@ RUN apk add --no-cache unzip p7zip openssl
 WORKDIR /app
 
 COPY server/package*.json ./server/
-COPY --from=builder /app/server/node_modules ./server/node_modules/
-COPY server/ ./server/
+RUN cd server && npm ci --omit=dev
 
-COPY --from=builder /app/client/dist ./server/public/client
+COPY server/src ./server/src
 COPY --from=builder /app/server/dist ./server/dist
-
-RUN mkdir -p uploads signed manifests public/install temp logs
+COPY --from=builder /app/client/dist ./server/public/client
 
 ENV NODE_ENV=production
 ENV PORT=3001
