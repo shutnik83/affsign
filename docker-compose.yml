@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: affsign
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DOMAIN=localhost:3001
+      - PROTOCOL=http
+      - MAX_FILE_SIZE=5368709120
+      - CLEANUP_INTERVAL_MS=3600000
+      - FILE_MAX_AGE_MS=86400000
+    volumes:
+      - uploads:/app/uploads
+      - signed:/app/signed
+      - manifests:/app/manifests
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/history"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    container_name: affsign-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+
+volumes:
+  uploads:
+  signed:
+  manifests:

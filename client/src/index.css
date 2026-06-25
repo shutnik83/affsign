@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  background-color: #000000;
+  color: #ffffff;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #38383a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #48484a;
+}
+
+::selection {
+  background: rgba(0, 122, 255, 0.3);
+  color: #ffffff;
+}
+
+input[type="password"],
+input[type="text"] {
+  outline: none;
+}
+
+.drop-zone {
+  transition: all 0.3s ease;
+}
+
+.drop-zone.dragging {
+  border-color: #007AFF !important;
+  background: rgba(0, 122, 255, 0.05) !important;
+}
