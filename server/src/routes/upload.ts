@@ -44,9 +44,12 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
         fs.mkdirSync(tempExtractDir, { recursive: true });
 
         try {
+          logger.info(`Parsing IPA: ${req.file.originalname} (${req.file.size} bytes)`);
           extractIpa(tempPath, tempExtractDir);
+          logger.info(`IPA extracted to ${tempExtractDir}`);
           const appInfo = parseAppInfo(tempExtractDir);
           appInfo.size = req.file.size;
+          logger.info(`IPA parsed: ${appInfo.name} (${appInfo.bundleId})`);
 
           let driveFileId = 'local';
           if (isGoogleDriveConfigured()) {
@@ -71,6 +74,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
             },
           });
         } catch (err) {
+          logger.error('IPA parse error:', err);
           res.status(400).json({
             success: false,
             error: `Failed to parse IPA: ${err instanceof Error ? err.message : String(err)}`,
