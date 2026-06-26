@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 type Theme = 'dark' | 'light';
 
@@ -12,31 +12,35 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 function getInitialTheme(): Theme {
   try {
     const saved = localStorage.getItem('affsign_theme');
-    if (saved === 'light' || saved === 'dark') return saved;
+    if (saved === 'light') return 'light';
   } catch {}
   return 'dark';
 }
 
-function applyTheme(theme: Theme) {
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-}
-
-const initialTheme = getInitialTheme();
-applyTheme(initialTheme);
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
-  useEffect(() => {
-    localStorage.setItem('affsign_theme', theme);
-    applyTheme(theme);
-  }, [theme]);
+  const applyClass = (t: Theme) => {
+    const root = document.documentElement;
+    if (t === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else {
+      root.classList.remove('dark');
+      root.classList.add('light');
+    }
+  };
 
-  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  applyClass(theme);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('affsign_theme', next);
+      applyClass(next);
+      return next;
+    });
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

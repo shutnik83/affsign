@@ -182,11 +182,11 @@ export default function App() {
           <div className="absolute top-0 right-0 flex items-center gap-2">
             <button
               onClick={toggleLocale}
-              className="p-2 rounded-xl bg-[var(--bg-card-solid)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--bg-card-solid)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-all"
               title={locale === 'en' ? 'Русский' : 'English'}
             >
               <Globe className="w-4 h-4" />
-              <span className="ml-1 text-xs font-medium">{locale.toUpperCase()}</span>
+              <span className="text-xs font-medium">{locale.toUpperCase()}</span>
             </button>
             <button
               onClick={toggleTheme}

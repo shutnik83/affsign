@@ -122,7 +122,7 @@ export function AdminPanel() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-[var(--bg-card-solid)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] shadow-lg transition-all flex items-center justify-center"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-blue-600 border border-blue-500 text-white hover:bg-blue-500 shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center"
       >
         <Settings className="w-5 h-5" />
       </button>
