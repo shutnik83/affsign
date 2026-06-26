@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, X, Plus, Trash2, Check, LogIn } from 'lucide-react';
+import { Settings, X, Trash2, Check, LogIn, Plus, ExternalLink } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 
 const API_BASE = '/api';
@@ -21,11 +21,6 @@ export function AdminPanel() {
   const [passwordError, setPasswordError] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [newRefreshToken, setNewRefreshToken] = useState('');
-  const [newFolderUploads, setNewFolderUploads] = useState('');
-  const [newFolderSigned, setNewFolderSigned] = useState('');
-  const [addError, setAddError] = useState('');
 
   const headers = () => ({ 'Content-Type': 'application/json', 'X-Admin-Password': password });
 
@@ -73,29 +68,15 @@ export function AdminPanel() {
     }
   }, []);
 
-  const handleAdd = async () => {
-    setAddError('');
-    if (!newEmail || !newRefreshToken) {
-      setAddError(t('adminFieldsRequired'));
-      return;
-    }
-    try {
-      const res = await fetch(`${API_BASE}/admin/accounts`, {
-        method: 'POST',
-        headers: headers(),
-        body: JSON.stringify({ email: newEmail, refreshToken: newRefreshToken, folderUploads: newFolderUploads, folderSigned: newFolderSigned }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setNewEmail(''); setNewRefreshToken(''); setNewFolderUploads(''); setNewFolderSigned('');
-        loadAccounts();
-      } else {
-        setAddError(data.error || t('adminAddFailed'));
-      }
-    } catch {
-      setAddError(t('adminConnectionError'));
-    }
+  const handleAddGoogle = () => {
+    window.open(`${API_BASE}/admin/auth/google?password=${encodeURIComponent(password)}`, '_blank');
   };
+
+  useEffect(() => {
+    if (!loggedIn) return;
+    const interval = setInterval(loadAccounts, 3000);
+    return () => clearInterval(interval);
+  }, [loggedIn]);
 
   const handleDelete = async (id: string) => {
     await fetch(`${API_BASE}/admin/accounts/${id}`, { method: 'DELETE', headers: headers() });
@@ -156,24 +137,19 @@ export function AdminPanel() {
                     {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
                     <button
                       onClick={handleLogin}
-                      className="w-full py-3 rounded-xl bg-blue-600 text-white font-medium text-sm hover:bg-blue-500 transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-3 rounded-xl btn-glass font-medium text-sm flex items-center justify-center gap-2"
                     >
                       <LogIn className="w-4 h-4" /> {t('adminLogin')}
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-5">
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-[var(--text-secondary)]">{t('adminAddAccount')}</h3>
-                      <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email" className={inputClass} />
-                      <input type="text" value={newRefreshToken} onChange={(e) => setNewRefreshToken(e.target.value)} placeholder="Refresh Token" className={inputClass} />
-                      <input type="text" value={newFolderUploads} onChange={(e) => setNewFolderUploads(e.target.value)} placeholder={t('adminFolderUploads')} className={inputClass} />
-                      <input type="text" value={newFolderSigned} onChange={(e) => setNewFolderSigned(e.target.value)} placeholder={t('adminFolderSigned')} className={inputClass} />
-                      {addError && <p className="text-xs text-red-500">{addError}</p>}
-                      <button onClick={handleAdd} className="w-full py-2.5 rounded-xl bg-green-600 text-white font-medium text-sm hover:bg-green-500 transition-colors flex items-center justify-center gap-2">
-                        <Plus className="w-4 h-4" /> {t('adminAddButton')}
-                      </button>
-                    </div>
+                    <button
+                      onClick={handleAddGoogle}
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium text-sm hover:from-blue-500 hover:to-cyan-400 transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" /> {t('adminAddGoogle')}
+                    </button>
 
                     <div className="border-t border-[var(--border)] pt-4">
                       <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-3">
@@ -193,10 +169,10 @@ export function AdminPanel() {
                                   {t('adminAdded')} {new Date(acct.addedAt).toLocaleDateString()}
                                 </div>
                               </div>
-                              <button onClick={() => handleActivate(acct.id)} className="p-1.5 rounded-lg bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-green-500 border border-[var(--border)] transition-colors" title={t('adminActivate')}>
+                              <button onClick={() => handleActivate(acct.id)} className="p-1.5 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-green-400 transition-colors" title={t('adminActivate')}>
                                 <Check className="w-4 h-4" />
                               </button>
-                              <button onClick={() => handleDelete(acct.id)} className="p-1.5 rounded-lg bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-red-500 border border-[var(--border)] transition-colors" title={t('adminDelete')}>
+                              <button onClick={() => handleDelete(acct.id)} className="p-1.5 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-red-400 transition-colors" title={t('adminDelete')}>
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
