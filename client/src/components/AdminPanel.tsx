@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, X, Plus, Trash2, Check, LogIn } from 'lucide-react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const API_BASE = '/api';
 
@@ -13,13 +14,13 @@ interface Account {
 }
 
 export function AdminPanel() {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(false);
-
   const [newEmail, setNewEmail] = useState('');
   const [newRefreshToken, setNewRefreshToken] = useState('');
   const [newFolderUploads, setNewFolderUploads] = useState('');
@@ -39,9 +40,7 @@ export function AdminPanel() {
     }
   };
 
-  useEffect(() => {
-    if (loggedIn) loadAccounts();
-  }, [loggedIn]);
+  useEffect(() => { if (loggedIn) loadAccounts(); }, [loggedIn]);
 
   const handleLogin = async () => {
     setPasswordError('');
@@ -55,10 +54,10 @@ export function AdminPanel() {
         setLoggedIn(true);
         localStorage.setItem('affsign_admin_pw', password);
       } else {
-        setPasswordError('Invalid password');
+        setPasswordError(t('adminInvalidPassword'));
       }
     } catch {
-      setPasswordError('Connection error');
+      setPasswordError(t('adminConnectionError'));
     }
   };
 
@@ -77,32 +76,24 @@ export function AdminPanel() {
   const handleAdd = async () => {
     setAddError('');
     if (!newEmail || !newRefreshToken) {
-      setAddError('Email and Refresh Token are required');
+      setAddError(t('adminFieldsRequired'));
       return;
     }
     try {
       const res = await fetch(`${API_BASE}/admin/accounts`, {
         method: 'POST',
         headers: headers(),
-        body: JSON.stringify({
-          email: newEmail,
-          refreshToken: newRefreshToken,
-          folderUploads: newFolderUploads,
-          folderSigned: newFolderSigned,
-        }),
+        body: JSON.stringify({ email: newEmail, refreshToken: newRefreshToken, folderUploads: newFolderUploads, folderSigned: newFolderSigned }),
       });
       const data = await res.json();
       if (data.success) {
-        setNewEmail('');
-        setNewRefreshToken('');
-        setNewFolderUploads('');
-        setNewFolderSigned('');
+        setNewEmail(''); setNewRefreshToken(''); setNewFolderUploads(''); setNewFolderSigned('');
         loadAccounts();
       } else {
-        setAddError(data.error || 'Failed to add account');
+        setAddError(data.error || t('adminAddFailed'));
       }
     } catch {
-      setAddError('Connection error');
+      setAddError(t('adminConnectionError'));
     }
   };
 
@@ -115,6 +106,8 @@ export function AdminPanel() {
     await fetch(`${API_BASE}/admin/accounts/${id}/activate`, { method: 'POST', headers: headers() });
     loadAccounts();
   };
+
+  const inputClass = "w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
 
   return (
     <>
@@ -142,7 +135,7 @@ export function AdminPanel() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">Admin</h2>
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t('adminTitle')}</h2>
                 <button onClick={() => setIsOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                   <X className="w-5 h-5" />
                 </button>
@@ -151,97 +144,59 @@ export function AdminPanel() {
               <div className="p-5 overflow-y-auto flex-1">
                 {!loggedIn ? (
                   <div className="space-y-4">
-                    <p className="text-sm text-[var(--text-secondary)]">Enter admin password</p>
+                    <p className="text-sm text-[var(--text-secondary)]">{t('adminEnterPassword')}</p>
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                      placeholder="Password"
-                      className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm"
+                      placeholder={t('adminPassword')}
+                      className={inputClass}
                     />
                     {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
                     <button
                       onClick={handleLogin}
                       className="w-full py-3 rounded-xl bg-blue-600 text-white font-medium text-sm hover:bg-blue-500 transition-colors flex items-center justify-center gap-2"
                     >
-                      <LogIn className="w-4 h-4" /> Login
+                      <LogIn className="w-4 h-4" /> {t('adminLogin')}
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-5">
                     <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-[var(--text-secondary)]">Add Google Account</h3>
-                      <input
-                        type="email"
-                        value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value)}
-                        placeholder="Email"
-                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm"
-                      />
-                      <input
-                        type="text"
-                        value={newRefreshToken}
-                        onChange={(e) => setNewRefreshToken(e.target.value)}
-                        placeholder="Refresh Token"
-                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm"
-                      />
-                      <input
-                        type="text"
-                        value={newFolderUploads}
-                        onChange={(e) => setNewFolderUploads(e.target.value)}
-                        placeholder="Uploads Folder ID (optional)"
-                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm"
-                      />
-                      <input
-                        type="text"
-                        value={newFolderSigned}
-                        onChange={(e) => setNewFolderSigned(e.target.value)}
-                        placeholder="Signed Folder ID (optional)"
-                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm"
-                      />
+                      <h3 className="text-sm font-medium text-[var(--text-secondary)]">{t('adminAddAccount')}</h3>
+                      <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email" className={inputClass} />
+                      <input type="text" value={newRefreshToken} onChange={(e) => setNewRefreshToken(e.target.value)} placeholder="Refresh Token" className={inputClass} />
+                      <input type="text" value={newFolderUploads} onChange={(e) => setNewFolderUploads(e.target.value)} placeholder={t('adminFolderUploads')} className={inputClass} />
+                      <input type="text" value={newFolderSigned} onChange={(e) => setNewFolderSigned(e.target.value)} placeholder={t('adminFolderSigned')} className={inputClass} />
                       {addError && <p className="text-xs text-red-500">{addError}</p>}
-                      <button
-                        onClick={handleAdd}
-                        className="w-full py-2.5 rounded-xl bg-green-600 text-white font-medium text-sm hover:bg-green-500 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <Plus className="w-4 h-4" /> Add Account
+                      <button onClick={handleAdd} className="w-full py-2.5 rounded-xl bg-green-600 text-white font-medium text-sm hover:bg-green-500 transition-colors flex items-center justify-center gap-2">
+                        <Plus className="w-4 h-4" /> {t('adminAddButton')}
                       </button>
                     </div>
 
                     <div className="border-t border-[var(--border)] pt-4">
                       <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-3">
-                        Accounts ({accounts.length})
+                        {t('adminAccounts')} ({accounts.length})
                       </h3>
                       {loading ? (
-                        <div className="text-center py-4 text-[var(--text-muted)] text-sm">Loading...</div>
+                        <div className="text-center py-4 text-[var(--text-muted)] text-sm">{t('adminLoading')}</div>
                       ) : accounts.length === 0 ? (
-                        <div className="text-center py-4 text-[var(--text-muted)] text-sm">No accounts added</div>
+                        <div className="text-center py-4 text-[var(--text-muted)] text-sm">{t('adminNoAccounts')}</div>
                       ) : (
                         <div className="space-y-2">
                           {accounts.map((acct) => (
-                            <div
-                              key={acct.id}
-                              className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]"
-                            >
+                            <div key={acct.id} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]">
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-medium text-[var(--text-primary)] truncate">{acct.email}</div>
                                 <div className="text-xs text-[var(--text-muted)] truncate">
-                                  Added {new Date(acct.addedAt).toLocaleDateString()}
+                                  {t('adminAdded')} {new Date(acct.addedAt).toLocaleDateString()}
                                 </div>
                               </div>
-                              <button
-                                onClick={() => handleActivate(acct.id)}
-                                className="p-1.5 rounded-lg bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-green-500 border border-[var(--border)] transition-colors"
-                                title="Activate"
-                              >
+                              <button onClick={() => handleActivate(acct.id)} className="p-1.5 rounded-lg bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-green-500 border border-[var(--border)] transition-colors" title={t('adminActivate')}>
                                 <Check className="w-4 h-4" />
                               </button>
-                              <button
-                                onClick={() => handleDelete(acct.id)}
-                                className="p-1.5 rounded-lg bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-red-500 border border-[var(--border)] transition-colors"
-                                title="Delete"
-                              >
+                              <button onClick={() => handleDelete(acct.id)} className="p-1.5 rounded-lg bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-red-500 border border-[var(--border)] transition-colors" title={t('adminDelete')}>
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>

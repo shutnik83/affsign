@@ -6,6 +6,7 @@ import { config } from './config';
 import { logger } from './logger';
 import { initStorage, cleanupOldApps } from './services/storage';
 import { ensureFolders, isGoogleDriveConfigured } from './services/googleDrive';
+import { addAccount, getAccountCount } from './services/accountStore';
 import { uploadRouter } from './routes/upload';
 import { signRouter } from './routes/sign';
 import { installRouter } from './routes/install';
@@ -76,6 +77,15 @@ try {
 } catch {}
 
 if (isGoogleDriveConfigured()) {
+  if (getAccountCount() === 0 && config.google.refreshToken) {
+    addAccount({
+      email: 'primary-account',
+      refreshToken: config.google.refreshToken,
+      folderUploads: config.google.folderUploads,
+      folderSigned: config.google.folderSigned,
+    });
+    logger.info('Auto-imported primary Google account from env');
+  }
   ensureFolders().catch(err => logger.error('Failed to ensure Drive folders:', err));
 }
 
