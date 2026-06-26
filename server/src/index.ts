@@ -5,6 +5,7 @@ import path from 'path';
 import { config } from './config';
 import { logger } from './logger';
 import { initStorage, cleanupOldApps } from './services/storage';
+import { ensureFolders, isGoogleDriveConfigured } from './services/googleDrive';
 import { uploadRouter } from './routes/upload';
 import { signRouter } from './routes/sign';
 import { installRouter } from './routes/install';
@@ -47,6 +48,10 @@ app.get('*', (req, res) => {
 app.use(errorHandler);
 
 initStorage();
+
+if (isGoogleDriveConfigured()) {
+  ensureFolders().catch(err => logger.error('Failed to ensure Drive folders:', err));
+}
 
 setInterval(() => {
   cleanupOldApps();

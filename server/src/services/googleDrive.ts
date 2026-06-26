@@ -10,6 +10,9 @@ const SCOPES = ['https://www.googleapis.com/auth/drive'];
 let driveClient: ReturnType<typeof google.drive> | null = null;
 let oauth2Client: InstanceType<typeof google.auth.OAuth2> | null = null;
 
+let cachedFolderUploads = config.google.folderUploads;
+let cachedFolderSigned = config.google.folderSigned;
+
 function getOAuth2Client() {
   if (!oauth2Client) {
     oauth2Client = new google.auth.OAuth2(
@@ -52,6 +55,55 @@ export async function handleAuthCallback(code: string): Promise<string> {
   const refreshToken = tokens.refresh_token || '';
   logger.info('Google OAuth2 authorized successfully');
   return refreshToken;
+}
+
+async function findOrCreateFolder(name: string): Promise<string> {
+  const drive = getDrive();
+  const res = await drive.files.list({
+    q: `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: 'files(id, name)',
+  });
+
+  if (res.data.files && res.data.files.length > 0) {
+    return res.data.files[0].id!;
+  }
+
+  const createRes = await drive.files.create({
+    requestBody: {
+      name,
+      mimeType: 'application/vnd.google-apps.folder',
+    },
+    fields: 'id',
+  });
+
+  const folderId = createRes.data.id!;
+  logger.info(`Created Google Drive folder: ${name} (id: ${folderId})`);
+  return folderId;
+}
+
+export async function ensureFolders(): Promise<void> {
+  if (!isGoogleDriveConfigured()) return;
+
+  if (!cachedFolderUploads) {
+    cachedFolderUploads = await findOrCreateFolder('Uploads');
+    logger.info(`Uploads folder: ${cachedFolderUploads}`);
+  }
+  if (!cachedFolderSigned) {
+    cachedFolderSigned = await findOrCreateFolder('Signed');
+    logger.info(`Signed folder: ${cachedFolderSigned}`);
+  }
+}
+
+function getUploadsFolder(): string {
+  return cachedFolderUploads || config.google.folderUploads;
+}
+
+function getSignedFolder(): string {
+  return cachedFolderSigned || config.google.folderSigned;
+}
+
+export function getFolderIds(): { uploads: string; signed: string } {
+  return { uploads: getUploadsFolder(), signed: getSignedFolder() };
 }
 
 function generateFileName(filename: string): string {

@@ -6,7 +6,7 @@ import { getApp, updateApp } from '../services/storage';
 import { parseP12Certificate, validateMobileProvision } from '../services/certificateParser';
 import { signIPA } from '../services/signer';
 import { generateQRCode } from '../services/otaGenerator';
-import { downloadToFile, uploadBuffer, uploadFileStream, isGoogleDriveConfigured, getPublicUrl } from '../services/googleDrive';
+import { downloadToFile, uploadBuffer, uploadFileStream, isGoogleDriveConfigured, getPublicUrl, getFolderIds } from '../services/googleDrive';
 import { logger } from '../logger';
 
 const router = Router();
@@ -112,7 +112,7 @@ router.post('/sign', async (req: Request, res: Response) => {
     const signedFile = await uploadFileStream(
       fs.createReadStream(signedIpaPath),
       `signed_${app.originalName}`,
-      config.google.folderSigned,
+      getFolderIds().signed,
       'application/zip'
     );
 
@@ -140,7 +140,7 @@ router.post('/sign', async (req: Request, res: Response) => {
     const manifestFile = await uploadBuffer(
       Buffer.from(manifestContent, 'utf-8'),
       `${manifestId}.plist`,
-      config.google.folderSigned,
+      getFolderIds().signed,
       'application/xml'
     );
 
@@ -154,7 +154,7 @@ router.post('/sign', async (req: Request, res: Response) => {
     const installFile = await uploadBuffer(
       Buffer.from(installPageContent, 'utf-8'),
       `${manifestId}_install.html`,
-      config.google.folderSigned,
+      getFolderIds().signed,
       'text/html'
     );
 

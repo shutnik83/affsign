@@ -5,7 +5,7 @@ import path from 'path';
 import { config } from '../config';
 import { createApp } from '../services/storage';
 import { extractIpa, parseAppInfo } from '../services/ipaParser';
-import { uploadBuffer, isGoogleDriveConfigured } from '../services/googleDrive';
+import { uploadBuffer, isGoogleDriveConfigured, getFolderIds } from '../services/googleDrive';
 import { logger } from '../logger';
 
 const router = Router();
@@ -53,7 +53,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
             const result = await uploadBuffer(
               req.file.buffer,
               req.file.originalname,
-              config.google.folderUploads,
+              getFolderIds().uploads,
               'application/zip'
             );
             driveFileId = result.fileId;
@@ -96,7 +96,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
         const result = await uploadBuffer(
           req.file.buffer,
           req.file.originalname,
-          config.google.folderUploads,
+          getFolderIds().uploads,
           'application/x-pkcs12'
         );
         driveFileId = result.fileId;
@@ -115,7 +115,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
         const result = await uploadBuffer(
           req.file.buffer,
           req.file.originalname,
-          config.google.folderUploads,
+          getFolderIds().uploads,
           'application/octet-stream'
         );
         driveFileId = result.fileId;
