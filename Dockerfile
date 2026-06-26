@@ -5,7 +5,7 @@ RUN apk add --no-cache unzip p7zip
 WORKDIR /app
 
 COPY server/package*.json ./server/
-COPY client/package*.json ./
+COPY client/package*.json ./client/
 
 RUN cd server && npm ci
 RUN cd client && npm ci
