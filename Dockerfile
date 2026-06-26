@@ -19,7 +19,7 @@ RUN cd client && npm run build
 
 FROM node:20-alpine
 
-RUN apk add --no-cache unzip p7zip openssl
+RUN apk add --no-cache unzip p7zip openssl zip
 
 WORKDIR /app
 

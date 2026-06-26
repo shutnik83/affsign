@@ -1,9 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { execFile } from 'child_process';
+import { execFile, execSync } from 'child_process';
 import { promisify } from 'util';
-import AdmZip from 'adm-zip';
 import { config } from '../config';
 import { logger } from '../logger';
 import { AppInfo, CertificateInfo } from '../types';
@@ -58,9 +57,7 @@ export async function signIPA(options: SignOptions): Promise<string> {
   } finally {
     try {
       fs.rmSync(tempDir, { recursive: true, force: true });
-    } catch {
-      // cleanup failure is non-critical
-    }
+    } catch {}
   }
 }
 
@@ -108,8 +105,7 @@ async function signOnMac(
   const extractDir = path.join(tempDir, 'extracted');
   fs.mkdirSync(extractDir, { recursive: true });
 
-  const zip = new AdmZip(ipaPath);
-  zip.extractAllTo(extractDir, true);
+  execSync(`unzip -q -o "${ipaPath}" -d "${extractDir}"`, { timeout: 120000 });
 
   const payloadDir = path.join(extractDir, 'Payload');
   const appDirs = fs.readdirSync(payloadDir).filter((d) => d.endsWith('.app'));
@@ -125,9 +121,7 @@ async function signOnMac(
   const ipaDir = path.dirname(outputPath);
   if (!fs.existsSync(ipaDir)) fs.mkdirSync(ipaDir, { recursive: true });
 
-  const signedZip = new AdmZip();
-  signedZip.addLocalFolder(path.join(extractDir, 'Payload'), 'Payload');
-  signedZip.writeZip(outputPath);
+  execSync(`cd "${extractDir}" && zip -r -q "${outputPath}" Payload`, { timeout: 120000 });
 
   logger.info(`IPA signed successfully: ${outputPath}`);
   return outputPath;
@@ -143,8 +137,9 @@ function signCrossPlatform(
   const extractDir = path.join(tempDir, 'extracted');
   fs.mkdirSync(extractDir, { recursive: true });
 
-  const zip = new AdmZip(ipaPath);
-  zip.extractAllTo(extractDir, true);
+  logger.info(`Extracting IPA with system unzip...`);
+  execSync(`unzip -q -o "${ipaPath}" -d "${extractDir}"`, { timeout: 120000 });
+  logger.info(`IPA extracted`);
 
   const payloadDir = path.join(extractDir, 'Payload');
   const appDirs = fs.readdirSync(payloadDir).filter((d) => d.endsWith('.app'));
@@ -163,11 +158,10 @@ function signCrossPlatform(
   const ipaDir = path.dirname(outputPath);
   if (!fs.existsSync(ipaDir)) fs.mkdirSync(ipaDir, { recursive: true });
 
-  const signedZip = new AdmZip();
-  signedZip.addLocalFolder(extractDir, '.');
-  signedZip.writeZip(outputPath);
-
+  logger.info(`Creating signed IPA with system zip...`);
+  execSync(`cd "${extractDir}" && zip -r -q "${outputPath}" Payload`, { timeout: 120000 });
   logger.info(`IPA re-signed (cross-platform): ${outputPath}`);
+
   return outputPath;
 }
 
@@ -192,9 +186,7 @@ function generateCodeResources(appBundlePath: string, certInfo: CertificateInfo)
             <key>Size</key>
             <integer>${content.length}</integer>
         </dict>`);
-        } catch {
-          // skip unreadable files
-        }
+        } catch {}
       }
     }
   };
