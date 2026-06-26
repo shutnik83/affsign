@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, X, Plus, Trash2, Check, LogIn } from 'lucide-react';
-import { useLanguage } from '../i18n/LanguageContext';
 
 const API_BASE = '/api';
 
@@ -14,7 +13,6 @@ interface Account {
 }
 
 export function AdminPanel() {
-  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [password, setPassword] = useState('');
@@ -221,7 +219,7 @@ export function AdminPanel() {
                         <div className="text-center py-4 text-[var(--text-muted)] text-sm">No accounts added</div>
                       ) : (
                         <div className="space-y-2">
-                          {accounts.map((acct, i) => (
+                          {accounts.map((acct) => (
                             <div
                               key={acct.id}
                               className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]"
