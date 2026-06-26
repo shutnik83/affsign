@@ -36,7 +36,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-const publicPath = path.join(__dirname, 'public', 'client');
+const publicPath = path.join(__dirname, '..', 'public', 'client');
 app.use(express.static(publicPath));
 app.get('*', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
