@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import AdmZip from 'adm-zip';
-import { config } from '../config';
+import { execSync } from 'child_process';
 import { logger } from '../logger';
 import { AppInfo } from '../types';
 
@@ -13,8 +12,10 @@ export function extractIpa(ipaPath: string, destDir: string): string {
   const payloadDir = path.join(destDir, 'Payload');
 
   try {
-    const zip = new AdmZip(ipaPath);
-    zip.extractAllTo(destDir, true);
+    execSync(`unzip -q -o "${ipaPath}" -d "${destDir}"`, {
+      timeout: 120000,
+      maxBuffer: 10 * 1024 * 1024,
+    });
   } catch (err) {
     throw new Error(
       `Failed to extract IPA: ${err instanceof Error ? err.message : String(err)}`
@@ -49,9 +50,7 @@ export function parseAppInfo(extractedDir: string): AppInfo {
   let iconBase64: string | undefined;
   try {
     iconBase64 = extractAppIcon(appBundlePath);
-  } catch {
-    // icon extraction is optional
-  }
+  } catch {}
 
   let totalSize = 0;
   const statDir = (dir: string): void => {
