@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Check } from 'lucide-react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface FileUploadZoneProps {
   label: string;
@@ -11,6 +12,7 @@ interface FileUploadZoneProps {
 }
 
 export function FileUploadZone({ label, accept, onDrop, progress, loaded }: FileUploadZoneProps) {
+  const { t } = useLanguage();
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -36,24 +38,17 @@ export function FileUploadZone({ label, accept, onDrop, progress, loaded }: File
       e.preventDefault();
       e.stopPropagation();
       setIsDragging(false);
-
       const files = e.dataTransfer.files;
-      if (files && files.length > 0) {
-        onDrop(files[0]);
-      }
+      if (files && files.length > 0) onDrop(files[0]);
     },
     [onDrop]
   );
 
-  const handleClick = () => {
-    inputRef.current?.click();
-  };
+  const handleClick = () => inputRef.current?.click();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      onDrop(files[0]);
-    }
+    if (files && files.length > 0) onDrop(files[0]);
   };
 
   return (
@@ -65,7 +60,7 @@ export function FileUploadZone({ label, accept, onDrop, progress, loaded }: File
           ? 'border-blue-500 bg-blue-500/5'
           : loaded
           ? 'border-green-500/30 bg-green-500/5'
-          : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900'
+          : 'border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--border-hover)] hover:bg-[var(--bg-card-solid)]'
       }`}
       onDragEnter={handleDragIn}
       onDragLeave={handleDragOut}
@@ -73,25 +68,16 @@ export function FileUploadZone({ label, accept, onDrop, progress, loaded }: File
       onDrop={handleDrop}
       onClick={handleClick}
     >
-      <input
-        ref={inputRef}
-        type="file"
-        accept={accept}
-        onChange={handleFileChange}
-        className="hidden"
-      />
+      <input ref={inputRef} type="file" accept={accept} onChange={handleFileChange} className="hidden" />
 
       {progress && progress > 0 && progress < 100 ? (
         <div className="space-y-3">
           <div className="w-10 h-10 mx-auto rounded-xl bg-blue-500/10 flex items-center justify-center">
             <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
           </div>
-          <div className="text-sm text-gray-400">Uploading... {progress}%</div>
-          <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+          <div className="text-sm text-[var(--text-secondary)]">{t('uploading')} {progress}%</div>
+          <div className="w-full h-1 bg-[var(--bg-hover)] rounded-full overflow-hidden">
+            <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
         </div>
       ) : loaded ? (
@@ -99,17 +85,15 @@ export function FileUploadZone({ label, accept, onDrop, progress, loaded }: File
           <div className="w-10 h-10 mx-auto rounded-xl bg-green-500/10 flex items-center justify-center">
             <Check className="w-5 h-5 text-green-500" />
           </div>
-          <div className="text-sm text-green-400 font-medium">Loaded</div>
+          <div className="text-sm text-green-500 font-medium">{t('loaded')}</div>
         </div>
       ) : (
         <div className="space-y-2">
-          <div className="w-10 h-10 mx-auto rounded-xl bg-zinc-800 flex items-center justify-center">
-            <Upload className="w-5 h-5 text-gray-400" />
+          <div className="w-10 h-10 mx-auto rounded-xl bg-[var(--bg-hover)] flex items-center justify-center">
+            <Upload className="w-5 h-5 text-[var(--text-secondary)]" />
           </div>
-          <div className="text-sm font-medium text-gray-300">{label}</div>
-          <div className="text-xs text-gray-500">
-            Drag & drop or click to browse
-          </div>
+          <div className="text-sm font-medium text-[var(--text-primary)]">{label}</div>
+          <div className="text-xs text-[var(--text-muted)]">{t('dragDrop')}</div>
         </div>
       )}
     </motion.div>

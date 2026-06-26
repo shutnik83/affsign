@@ -1,13 +1,15 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileUp, Shield, History, X } from 'lucide-react';
+import { FileUp, Shield, History, X, Globe, Sun, Moon } from 'lucide-react';
 import { FileUploadZone } from './components/FileUploadZone';
 import { AppInfoCard } from './components/AppInfoCard';
 import { CertificateInfoCard } from './components/CertificateInfoCard';
 import { SigningPanel } from './components/SigningPanel';
 import { ResultPanel } from './components/ResultPanel';
 import { HistoryPanel } from './components/HistoryPanel';
-import { uploadFile, signApp } from './api/client';
+import { uploadFile, signApp, saveToHistory } from './api/client';
+import { useLanguage } from './i18n/LanguageContext';
+import { useTheme } from './i18n/ThemeContext';
 
 type Tab = 'sign' | 'history';
 
@@ -34,6 +36,7 @@ interface ProvisionData {
 }
 
 interface SignResult {
+  id?: string;
   downloadUrl: string;
   installUrl: string;
   otaLink: string;
@@ -46,9 +49,13 @@ interface SignResult {
     expirationDate: string;
     isValid: boolean;
   };
+  signedAt?: string;
+  originalName?: string;
 }
 
 export default function App() {
+  const { t, locale, toggleLocale } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>('sign');
   const [ipaData, setIpaData] = useState<IPAData | null>(null);
   const [p12Data, setP12Data] = useState<P12Data | null>(null);
@@ -68,14 +75,14 @@ export default function App() {
       if (res.success && res.data) {
         setIpaData({ id: res.data.id, info: res.data.info! });
       } else {
-        setError(res.error || 'Failed to parse IPA');
+        setError(res.error || t('failedToParse'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : t('uploadFailed'));
     } finally {
       setUploadProgress((prev) => ({ ...prev, ipa: 0 }));
     }
-  }, []);
+  }, [t]);
 
   const handleP12Drop = useCallback(async (file: File) => {
     setError(null);
@@ -84,14 +91,14 @@ export default function App() {
       if (res.success && res.data) {
         setP12Data({ driveFileId: res.data.driveFileId!, originalName: res.data.originalName! });
       } else {
-        setError(res.error || 'Failed to upload P12');
+        setError(res.error || t('uploadFailed'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : t('uploadFailed'));
     } finally {
       setUploadProgress((prev) => ({ ...prev, p12: 0 }));
     }
-  }, []);
+  }, [t]);
 
   const handleProvisionDrop = useCallback(async (file: File) => {
     setError(null);
@@ -100,54 +107,57 @@ export default function App() {
       if (res.success && res.data) {
         setProvisionData({ driveFileId: res.data.driveFileId!, originalName: res.data.originalName! });
       } else {
-        setError(res.error || 'Failed to upload MobileProvision');
+        setError(res.error || t('uploadFailed'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : t('uploadFailed'));
     } finally {
       setUploadProgress((prev) => ({ ...prev, provision: 0 }));
     }
-  }, []);
+  }, [t]);
 
   const handleSign = useCallback(async () => {
-    if (!ipaData) {
-      setError('Please upload an IPA file');
-      return;
-    }
-    if (!p12Data) {
-      setError('Please upload a P12 certificate');
-      return;
-    }
-    if (!provisionData) {
-      setError('Please upload a MobileProvision file');
-      return;
-    }
-    if (!p12Password) {
-      setError('Please enter the P12 password');
-      return;
-    }
+    if (!ipaData) { setError(t('pleaseUploadIPA')); return; }
+    if (!p12Data) { setError(t('pleaseUploadP12')); return; }
+    if (!provisionData) { setError(t('pleaseUploadProvision')); return; }
+    if (!p12Password) { setError(t('pleaseEnterPassword')); return; }
+
     setIsSigning(true);
     setError(null);
     try {
       const res = await signApp(ipaData.id, p12Data.driveFileId, p12Password, provisionData.driveFileId);
       if (res.success && res.data) {
-        setSignResult({
+        const result: SignResult = {
+          id: res.data.id,
           downloadUrl: res.data.downloadUrl,
           installUrl: res.data.installUrl,
           otaLink: res.data.otaLink,
           qrCodeDataUrl: res.data.qrCodeDataUrl,
           info: res.data.info,
           certificate: res.data.certificate,
+          signedAt: res.data.signedAt,
+          originalName: ipaData.info?.name || '',
+        };
+        setSignResult(result);
+        saveToHistory({
+          id: res.data.id,
+          originalName: ipaData.info?.name || '',
+          info: res.data.info,
+          certificate: res.data.certificate,
+          status: 'signed',
+          signedAt: res.data.signedAt,
+          installUrl: res.data.installUrl,
+          otaLink: res.data.otaLink,
         });
       } else {
-        setError(res.error || 'Signing failed');
+        setError(res.error || t('signingFailed'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Signing failed');
+      setError(err instanceof Error ? err.message : t('signingFailed'));
     } finally {
       setIsSigning(false);
     }
-  }, [ipaData, p12Data, provisionData, p12Password]);
+  }, [ipaData, p12Data, provisionData, p12Password, t]);
 
   const handleReset = useCallback(() => {
     setIpaData(null);
@@ -161,20 +171,37 @@ export default function App() {
   const canSign = !!(ipaData && p12Data && provisionData && p12Password) && !isSigning;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
       <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-12 relative"
         >
+          <div className="absolute top-0 right-0 flex items-center gap-2">
+            <button
+              onClick={toggleLocale}
+              className="p-2 rounded-xl bg-[var(--bg-card-solid)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-all"
+              title={locale === 'en' ? 'Русский' : 'English'}
+            >
+              <Globe className="w-4 h-4" />
+              <span className="ml-1 text-xs font-medium">{locale.toUpperCase()}</span>
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-[var(--bg-card-solid)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-all"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
+
           <div className="inline-flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
               <Shield className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-4xl font-bold tracking-tight">AffSign</h1>
           </div>
-          <p className="text-gray-400 text-lg">IPA Signing & OTA Distribution</p>
+          <p className="text-[var(--text-secondary)] text-lg">{t('subtitle')}</p>
         </motion.header>
 
         <div className="flex justify-center gap-2 mb-8">
@@ -182,23 +209,23 @@ export default function App() {
             onClick={() => setActiveTab('sign')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
               activeTab === 'sign'
-                ? 'bg-white text-black'
-                : 'bg-zinc-900 text-gray-400 hover:bg-zinc-800 hover:text-gray-300'
+                ? 'bg-white dark:bg-white text-black dark:text-black bg-[var(--text-primary)] text-[var(--bg-primary)]'
+                : 'bg-[var(--bg-card-solid)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] border border-[var(--border)]'
             }`}
           >
             <FileUp className="w-4 h-4" />
-            Sign IPA
+            {t('signIPA')}
           </button>
           <button
             onClick={() => setActiveTab('history')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
               activeTab === 'history'
-                ? 'bg-white text-black'
-                : 'bg-zinc-900 text-gray-400 hover:bg-zinc-800 hover:text-gray-300'
+                ? 'bg-white dark:bg-white text-black dark:text-black bg-[var(--text-primary)] text-[var(--bg-primary)]'
+                : 'bg-[var(--bg-card-solid)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] border border-[var(--border)]'
             }`}
           >
             <History className="w-4 h-4" />
-            History
+            {t('history')}
           </button>
         </div>
 
@@ -215,10 +242,10 @@ export default function App() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 rounded-xl bg-red-950/50 border border-red-900/50 flex items-center justify-between"
+                  className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 flex items-center justify-between"
                 >
-                  <span className="text-red-400 text-sm">{error}</span>
-                  <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300">
+                  <span className="text-red-600 dark:text-red-400 text-sm">{error}</span>
+                  <button onClick={() => setError(null)} className="text-red-600 dark:text-red-400 hover:text-red-500">
                     <X className="w-4 h-4" />
                   </button>
                 </motion.div>
@@ -226,37 +253,19 @@ export default function App() {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-6">
-                  <FileUploadZone
-                    label="IPA File"
-                    accept=".ipa"
-                    onDrop={handleIPADrop}
-                    progress={uploadProgress.ipa}
-                    loaded={!!ipaData}
-                  />
-                  <FileUploadZone
-                    label="P12 Certificate"
-                    accept=".p12"
-                    onDrop={handleP12Drop}
-                    progress={uploadProgress.p12}
-                    loaded={!!p12Data}
-                  />
-                  <FileUploadZone
-                    label="MobileProvision"
-                    accept=".mobileprovision,.provisionprofile"
-                    onDrop={handleProvisionDrop}
-                    progress={uploadProgress.provision}
-                    loaded={!!provisionData}
-                  />
+                  <FileUploadZone label={t('ipaFile')} accept=".ipa" onDrop={handleIPADrop} progress={uploadProgress.ipa} loaded={!!ipaData} />
+                  <FileUploadZone label={t('p12Certificate')} accept=".p12" onDrop={handleP12Drop} progress={uploadProgress.p12} loaded={!!p12Data} />
+                  <FileUploadZone label={t('mobileProvision')} accept=".mobileprovision,.provisionprofile" onDrop={handleProvisionDrop} progress={uploadProgress.provision} loaded={!!provisionData} />
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                      P12 Password
+                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                      {t('p12Password')}
                     </label>
                     <input
                       type="password"
                       value={p12Password}
                       onChange={(e) => setP12Password(e.target.value)}
-                      placeholder="Enter certificate password"
-                      className="w-full px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                      placeholder={t('enterPassword')}
+                      className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
                     />
                   </div>
                 </div>
@@ -264,14 +273,7 @@ export default function App() {
                 <div className="space-y-6">
                   {ipaData && <AppInfoCard info={ipaData.info} />}
                   {signResult?.certificate && <CertificateInfoCard cert={signResult.certificate} />}
-
-                  <SigningPanel
-                    canSign={canSign}
-                    isSigning={isSigning}
-                    onSign={handleSign}
-                    onReset={handleReset}
-                    hasResult={!!signResult}
-                  />
+                  <SigningPanel canSign={canSign} isSigning={isSigning} onSign={handleSign} onReset={handleReset} hasResult={!!signResult} />
                 </div>
               </div>
 

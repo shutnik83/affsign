@@ -148,3 +148,32 @@ export function formatFileSize(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
+
+const HISTORY_KEY = 'affsign_history';
+
+export function getLocalHistory(): HistoryItem[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function saveToHistory(item: HistoryItem): void {
+  const history = getLocalHistory();
+  const existing = history.findIndex((h) => h.id === item.id);
+  if (existing >= 0) {
+    history[existing] = item;
+  } else {
+    history.unshift(item);
+  }
+  if (history.length > 50) history.length = 50;
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+export function deleteFromHistory(id: string): void {
+  const history = getLocalHistory().filter((h) => h.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
