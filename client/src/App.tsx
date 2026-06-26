@@ -172,7 +172,7 @@ export default function App() {
   const canSign = !!(ipaData && p12Data && provisionData && p12Password) && !isSigning;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
+    <div className="min-h-screen text-[var(--text-primary)] transition-colors duration-300">
       <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <motion.header
           initial={{ opacity: 0, y: -20 }}
@@ -182,7 +182,7 @@ export default function App() {
           <div className="absolute top-0 right-0 flex items-center gap-2">
             <button
               onClick={toggleLocale}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--bg-card-solid)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
               title={locale === 'en' ? 'Русский' : 'English'}
             >
               <Globe className="w-4 h-4" />
@@ -190,7 +190,7 @@ export default function App() {
             </button>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-[var(--bg-card-solid)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-all"
+              className="p-2 rounded-xl glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -210,8 +210,8 @@ export default function App() {
             onClick={() => setActiveTab('sign')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
               activeTab === 'sign'
-                ? 'bg-white dark:bg-white text-black dark:text-black bg-[var(--text-primary)] text-[var(--bg-primary)]'
-                : 'bg-[var(--bg-card-solid)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] border border-[var(--border)]'
+                ? 'btn-glass shadow-lg shadow-blue-500/20'
+                : 'glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             <FileUp className="w-4 h-4" />
@@ -221,8 +221,8 @@ export default function App() {
             onClick={() => setActiveTab('history')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
               activeTab === 'history'
-                ? 'bg-white dark:bg-white text-black dark:text-black bg-[var(--text-primary)] text-[var(--bg-primary)]'
-                : 'bg-[var(--bg-card-solid)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] border border-[var(--border)]'
+                ? 'btn-glass shadow-lg shadow-blue-500/20'
+                : 'glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             <History className="w-4 h-4" />
@@ -243,10 +243,10 @@ export default function App() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/50 flex items-center justify-between"
+                  className="mb-6 p-4 rounded-xl glass border border-red-500/30 flex items-center justify-between"
                 >
-                  <span className="text-red-600 dark:text-red-400 text-sm">{error}</span>
-                  <button onClick={() => setError(null)} className="text-red-600 dark:text-red-400 hover:text-red-500">
+                  <span className="text-red-400 text-sm">{error}</span>
+                  <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300">
                     <X className="w-4 h-4" />
                   </button>
                 </motion.div>
@@ -266,7 +266,7 @@ export default function App() {
                       value={p12Password}
                       onChange={(e) => setP12Password(e.target.value)}
                       placeholder={t('enterPassword')}
-                      className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                      className="w-full px-4 py-3 rounded-xl glass glow-border text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
                     />
                   </div>
                 </div>

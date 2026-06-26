@@ -107,13 +107,13 @@ export function AdminPanel() {
     loadAccounts();
   };
 
-  const inputClass = "w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
+  const inputClass = "w-full px-3 py-2.5 rounded-xl glass glow-border text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
 
   return (
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-blue-600 border border-blue-500 text-white hover:bg-blue-500 shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full btn-glass shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center hover:scale-110"
       >
         <Settings className="w-5 h-5" />
       </button>
@@ -131,7 +131,7 @@ export function AdminPanel() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[var(--bg-card-solid)] border border-[var(--border)] rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
+              className="glass-solid glow-border rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
@@ -186,7 +186,7 @@ export function AdminPanel() {
                       ) : (
                         <div className="space-y-2">
                           {accounts.map((acct) => (
-                            <div key={acct.id} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]">
+                            <div key={acct.id} className="flex items-center gap-3 p-3 rounded-xl glass glow-border">
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-medium text-[var(--text-primary)] truncate">{acct.email}</div>
                                 <div className="text-xs text-[var(--text-muted)] truncate">

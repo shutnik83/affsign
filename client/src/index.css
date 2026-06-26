@@ -9,51 +9,100 @@
 }
 
 html:not(.dark) {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-card: #f3f4f6;
-  --bg-card-solid: #f3f4f6;
-  --bg-input: #f3f4f6;
-  --bg-hover: #e5e7eb;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
-  --border: #e5e7eb;
-  --border-hover: #d1d5db;
+  --bg-primary: #e8f0fe;
+  --bg-secondary: #d4e4fc;
+  --bg-card: rgba(255, 255, 255, 0.45);
+  --bg-card-solid: rgba(255, 255, 255, 0.55);
+  --bg-input: rgba(255, 255, 255, 0.5);
+  --bg-hover: rgba(255, 255, 255, 0.7);
+  --text-primary: #0d1b3e;
+  --text-secondary: #3b5998;
+  --text-muted: #7b8fbd;
+  --border: rgba(100, 160, 255, 0.3);
+  --border-hover: rgba(100, 160, 255, 0.5);
+  --glow: rgba(0, 120, 255, 0.15);
+  --glass-bg: rgba(200, 220, 255, 0.35);
+  --glass-border: rgba(150, 200, 255, 0.4);
 }
 
 html.dark {
-  --bg-primary: #000000;
-  --bg-secondary: #09090b;
-  --bg-card: #1c1c1e;
-  --bg-card-solid: #18181b;
-  --bg-input: #18181b;
-  --bg-hover: #27272a;
-  --text-primary: #ffffff;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
-  --border: #27272a;
-  --border-hover: #3f3f46;
+  --bg-primary: #020818;
+  --bg-secondary: #0a1628;
+  --bg-card: rgba(10, 25, 60, 0.6);
+  --bg-card-solid: rgba(12, 30, 70, 0.7);
+  --bg-input: rgba(15, 35, 80, 0.6);
+  --bg-hover: rgba(20, 45, 100, 0.5);
+  --text-primary: #e0eaff;
+  --text-secondary: #7da4e0;
+  --text-muted: #4a6a9e;
+  --border: rgba(50, 120, 220, 0.25);
+  --border-hover: rgba(80, 150, 255, 0.4);
+  --glow: rgba(0, 100, 255, 0.2);
+  --glass-bg: rgba(10, 30, 80, 0.5);
+  --glass-border: rgba(40, 100, 200, 0.3);
 }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-  background-color: var(--bg-primary);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
+  background-attachment: fixed;
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 8px 32px var(--glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-solid {
+  background: var(--bg-card-solid);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 24px var(--glow);
+}
+
+.glow-border {
+  border: 1px solid var(--border);
+  box-shadow: 0 0 15px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glow-border:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 0 25px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.btn-glass {
+  background: linear-gradient(135deg, rgba(0, 100, 255, 0.3), rgba(0, 60, 200, 0.2));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(80, 160, 255, 0.3);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-glass:hover {
+  background: linear-gradient(135deg, rgba(0, 120, 255, 0.4), rgba(0, 80, 220, 0.3));
+  border-color: rgba(100, 180, 255, 0.5);
+  box-shadow: 0 0 20px rgba(0, 120, 255, 0.3);
 }
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #38383a; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #48484a; }
+::-webkit-scrollbar-thumb { background: rgba(100, 160, 255, 0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(100, 160, 255, 0.5); }
 
-::selection { background: rgba(0, 122, 255, 0.3); color: inherit; }
+::selection { background: rgba(0, 120, 255, 0.3); color: inherit; }
 
 input[type="password"], input[type="text"] { outline: none; }
 
 .drop-zone { transition: all 0.3s ease; }
-.drop-zone.dragging { border-color: #007AFF !important; background: rgba(0, 122, 255, 0.05) !important; }
+.drop-zone.dragging { border-color: #3b82f6 !important; background: rgba(59, 130, 246, 0.08) !important; box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
