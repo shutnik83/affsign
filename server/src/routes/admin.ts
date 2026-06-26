@@ -15,6 +15,28 @@ function requireAdmin(req: Request, res: Response): boolean {
   return true;
 }
 
+async function getStorageQuota(refreshToken: string): Promise<{ used: number; total: number; usedBytes: number; totalBytes: number } | null> {
+  try {
+    const auth = new google.auth.OAuth2(config.google.oauthClientId, config.google.oauthClientSecret, config.google.redirectUri);
+    auth.setCredentials({ refresh_token: refreshToken });
+    const drive = google.drive({ version: 'v3', auth });
+    const about = await drive.about.get({ fields: 'storageQuota' });
+    const q = about.data.storageQuota;
+    if (!q) return null;
+    const totalBytes = parseInt(q.limit || '0', 10);
+    const usedBytes = parseInt(q.usage || '0', 10);
+    return {
+      totalBytes,
+      usedBytes,
+      total: totalBytes > 0 ? Math.round((totalBytes - usedBytes) / (1024 * 1024 * 1024) * 10) / 10 : 0,
+      used: totalBytes > 0 ? Math.round(usedBytes / (1024 * 1024 * 1024) * 10) / 10 : 0,
+    };
+  } catch (err) {
+    logger.error(`Failed to get quota: ${err}`);
+    return null;
+  }
+}
+
 router.post('/admin/login', (req: Request, res: Response) => {
   const { password } = req.body;
   if (!password || password !== config.adminPassword) {
@@ -24,10 +46,21 @@ router.post('/admin/login', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
-router.get('/admin/accounts', (req: Request, res: Response) => {
+router.get('/admin/accounts', async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
-  const accounts = getAllAccounts().map(({ refreshToken, ...rest }) => rest);
-  res.json({ success: true, data: accounts, count: getAccountCount() });
+  const accounts = getAllAccounts();
+  const data = await Promise.all(accounts.map(async (acct) => {
+    const quota = await getStorageQuota(acct.refreshToken);
+    return {
+      id: acct.id,
+      email: acct.email,
+      folderUploads: acct.folderUploads,
+      folderSigned: acct.folderSigned,
+      addedAt: acct.addedAt,
+      storage: quota,
+    };
+  }));
+  res.json({ success: true, data, count: getAccountCount() });
 });
 
 router.post('/admin/accounts', (req: Request, res: Response) => {

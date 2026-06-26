@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, X, Trash2, Check, LogIn, Plus } from 'lucide-react';
+import { Settings, X, Trash2, Check, LogIn, Plus, HardDrive } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 
 const API_BASE = '/api';
+
+interface AccountStorage {
+  used: number;
+  total: number;
+  usedBytes: number;
+  totalBytes: number;
+}
 
 interface Account {
   id: string;
@@ -11,6 +18,37 @@ interface Account {
   folderUploads: string;
   folderSigned: string;
   addedAt: string;
+  storage: AccountStorage | null;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function StorageBar({ storage }: { storage: AccountStorage | null }) {
+  if (!storage || storage.totalBytes === 0) {
+    return <div className="text-xs text-[var(--text-muted)]">—</div>;
+  }
+  const pct = Math.min((storage.usedBytes / storage.totalBytes) * 100, 100);
+  const free = storage.total - storage.used;
+  const color = pct > 90 ? 'from-red-500 to-orange-500' : pct > 70 ? 'from-yellow-500 to-orange-400' : 'from-blue-500 to-cyan-400';
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-xs">
+        <span className="text-[var(--text-secondary)]">{storage.used} GB used</span>
+        <span className="text-[var(--text-muted)]">{free} GB free</span>
+      </div>
+      <div className="w-full h-2 rounded-full bg-[var(--bg-hover)] overflow-hidden">
+        <div className={`h-full rounded-full bg-gradient-to-r ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="text-[10px] text-[var(--text-muted)]">{storage.total} GB total</div>
+    </div>
+  );
 }
 
 export function AdminPanel() {
@@ -74,7 +112,7 @@ export function AdminPanel() {
 
   useEffect(() => {
     if (!loggedIn) return;
-    const interval = setInterval(loadAccounts, 3000);
+    const interval = setInterval(loadAccounts, 5000);
     return () => clearInterval(interval);
   }, [loggedIn]);
 
@@ -87,6 +125,9 @@ export function AdminPanel() {
     await fetch(`${API_BASE}/admin/accounts/${id}/activate`, { method: 'POST', headers: headers() });
     loadAccounts();
   };
+
+  const totalUsed = accounts.reduce((s, a) => s + (a.storage?.usedBytes || 0), 0);
+  const totalSpace = accounts.reduce((s, a) => s + (a.storage?.totalBytes || 0), 0);
 
   const inputClass = "w-full px-3 py-2.5 rounded-xl glass glow-border text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
 
@@ -112,7 +153,7 @@ export function AdminPanel() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="glass-solid glow-border rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col"
+              className="glass-solid glow-border rounded-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
@@ -144,6 +185,20 @@ export function AdminPanel() {
                   </div>
                 ) : (
                   <div className="space-y-5">
+                    {accounts.length > 0 && (
+                      <div className="rounded-xl glass glow-border p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <HardDrive className="w-4 h-4 text-blue-400" />
+                          <span className="text-sm font-medium text-[var(--text-primary)]">{t('adminTotalStorage')}</span>
+                        </div>
+                        {totalSpace > 0 ? (
+                          <StorageBar storage={{ usedBytes: totalUsed, totalBytes: totalSpace, used: Math.round(totalUsed / (1024**3) * 10) / 10, total: Math.round(totalSpace / (1024**3) * 10) / 10 }} />
+                        ) : (
+                          <div className="text-xs text-[var(--text-muted)]">—</div>
+                        )}
+                      </div>
+                    )}
+
                     <button
                       onClick={handleAddGoogle}
                       className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium text-sm hover:from-blue-500 hover:to-cyan-400 transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
@@ -155,26 +210,27 @@ export function AdminPanel() {
                       <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-3">
                         {t('adminAccounts')} ({accounts.length})
                       </h3>
-                      {loading ? (
+                      {loading && accounts.length === 0 ? (
                         <div className="text-center py-4 text-[var(--text-muted)] text-sm">{t('adminLoading')}</div>
                       ) : accounts.length === 0 ? (
                         <div className="text-center py-4 text-[var(--text-muted)] text-sm">{t('adminNoAccounts')}</div>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {accounts.map((acct) => (
-                            <div key={acct.id} className="flex items-center gap-3 p-3 rounded-xl glass glow-border">
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-[var(--text-primary)] truncate">{acct.email}</div>
-                                <div className="text-xs text-[var(--text-muted)] truncate">
-                                  {t('adminAdded')} {new Date(acct.addedAt).toLocaleDateString()}
+                            <div key={acct.id} className="rounded-xl glass glow-border p-4 space-y-3">
+                              <div className="flex items-center gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-[var(--text-primary)] truncate">{acct.email}</div>
+                                  <div className="text-[10px] text-[var(--text-muted)]">{t('adminAdded')} {new Date(acct.addedAt).toLocaleDateString()}</div>
                                 </div>
+                                <button onClick={() => handleActivate(acct.id)} className="p-1.5 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-green-400 transition-colors" title={t('adminActivate')}>
+                                  <Check className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleDelete(acct.id)} className="p-1.5 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-red-400 transition-colors" title={t('adminDelete')}>
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               </div>
-                              <button onClick={() => handleActivate(acct.id)} className="p-1.5 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-green-400 transition-colors" title={t('adminActivate')}>
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => handleDelete(acct.id)} className="p-1.5 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-red-400 transition-colors" title={t('adminDelete')}>
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              <StorageBar storage={acct.storage} />
                             </div>
                           ))}
                         </div>

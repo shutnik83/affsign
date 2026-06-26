@@ -63,6 +63,7 @@ const translations = {
     adminFieldsRequired: 'Email and Refresh Token are required',
     adminAddFailed: 'Failed to add account',
     adminAddGoogle: 'Add Google Account',
+    adminTotalStorage: 'Total Storage',
   },
   ru: {
     subtitle: 'Подписание IPA и OTA-установка',
@@ -126,6 +127,7 @@ const translations = {
     adminFieldsRequired: 'Email и Refresh Token обязательны',
     adminAddFailed: 'Не удалось добавить аккаунт',
     adminAddGoogle: 'Добавить Google аккаунт',
+    adminTotalStorage: 'Всего хранилища',
   },
 } as const;
 
