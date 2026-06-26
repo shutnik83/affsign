@@ -5,13 +5,26 @@ import path from 'path';
 import { config } from '../config';
 import { createApp } from '../services/storage';
 import { extractIpa, parseAppInfo } from '../services/ipaParser';
-import { uploadBuffer, isGoogleDriveConfigured, getFolderIds } from '../services/googleDrive';
+import { uploadBuffer, uploadFileStream, isGoogleDriveConfigured, getFolderIds } from '../services/googleDrive';
 import { logger } from '../logger';
 
 const router = Router();
 
+const uploadDir = path.join(config.paths.temp, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`);
+  },
+});
+
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage,
   limits: { fileSize: config.maxFileSize },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['.ipa', '.p12', '.mobileprovision', '.provisionprofile'];
@@ -24,7 +37,21 @@ const upload = multer({
   },
 });
 
+function cleanupFile(filePath?: string): void {
+  try {
+    if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch {}
+}
+
+function cleanupDir(dirPath: string): void {
+  try {
+    if (dirPath && fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
+  } catch {}
+}
+
 router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
+  const uploadedFile = req.file?.path;
+
   try {
     if (!req.file) {
       res.status(400).json({ success: false, error: 'No file uploaded' });
@@ -32,73 +59,56 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     }
 
     const ext = path.extname(req.file.originalname).toLowerCase();
+    logger.info(`Upload received: ${req.file.originalname} (${req.file.size} bytes, type: ${ext})`);
 
     if (ext === '.ipa') {
-      const tempPath = path.join(config.paths.temp, `upload_${Date.now()}${ext}`);
+      const tempExtractDir = path.join(config.paths.temp, `extract_${Date.now()}`);
 
       try {
-        fs.mkdirSync(path.dirname(tempPath), { recursive: true });
-        fs.writeFileSync(tempPath, req.file.buffer);
+        extractIpa(uploadedFile!, tempExtractDir);
+        logger.info(`IPA extracted: ${tempExtractDir}`);
 
-        const tempExtractDir = path.join(config.paths.temp, `extract_${Date.now()}`);
-        fs.mkdirSync(tempExtractDir, { recursive: true });
+        const appInfo = parseAppInfo(tempExtractDir);
+        appInfo.size = req.file.size;
+        logger.info(`IPA parsed: ${appInfo.name} (${appInfo.bundleId})`);
 
-        try {
-          logger.info(`Parsing IPA: ${req.file.originalname} (${req.file.size} bytes)`);
-          extractIpa(tempPath, tempExtractDir);
-          logger.info(`IPA extracted to ${tempExtractDir}`);
-          const appInfo = parseAppInfo(tempExtractDir);
-          appInfo.size = req.file.size;
-          logger.info(`IPA parsed: ${appInfo.name} (${appInfo.bundleId})`);
-
-          let driveFileId = 'local';
-          if (isGoogleDriveConfigured()) {
-            const result = await uploadBuffer(
-              req.file.buffer,
-              req.file.originalname,
-              getFolderIds().uploads,
-              'application/zip'
-            );
-            driveFileId = result.fileId;
-          }
-
-          const app = createApp(driveFileId, req.file.originalname);
-          app.info = appInfo;
-
-          res.json({
-            success: true,
-            data: {
-              id: app.id,
-              type: 'ipa',
-              info: appInfo,
-            },
-          });
-        } catch (err) {
-          logger.error('IPA parse error:', err);
-          res.status(400).json({
-            success: false,
-            error: `Failed to parse IPA: ${err instanceof Error ? err.message : String(err)}`,
-          });
-        } finally {
-          try {
-            fs.rmSync(tempExtractDir, { recursive: true, force: true });
-          } catch {}
-          try {
-            fs.unlinkSync(tempPath);
-          } catch {}
+        let driveFileId = 'local';
+        if (isGoogleDriveConfigured()) {
+          const fileStream = fs.createReadStream(uploadedFile!);
+          const result = await uploadFileStream(
+            fileStream,
+            req.file.originalname,
+            getFolderIds().uploads,
+            'application/zip'
+          );
+          driveFileId = result.fileId;
         }
-      } catch (err) {
-        logger.error('IPA upload error:', err);
-        res.status(500).json({
-          success: false,
-          error: err instanceof Error ? err.message : 'Upload failed',
+
+        const app = createApp(driveFileId, req.file.originalname);
+        app.info = appInfo;
+
+        res.json({
+          success: true,
+          data: {
+            id: app.id,
+            type: 'ipa',
+            info: appInfo,
+          },
         });
+      } catch (err) {
+        logger.error('IPA parse error:', err);
+        res.status(400).json({
+          success: false,
+          error: `Failed to parse IPA: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      } finally {
+        cleanupDir(tempExtractDir);
       }
     } else if (ext === '.p12') {
       let driveFileId = 'local';
       if (isGoogleDriveConfigured()) {
         const result = await uploadBuffer(
-          req.file.buffer,
+          fs.readFileSync(uploadedFile!),
           req.file.originalname,
           getFolderIds().uploads,
           'application/x-pkcs12'
@@ -107,17 +117,13 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       }
       res.json({
         success: true,
-        data: {
-          type: 'p12',
-          driveFileId,
-          originalName: req.file.originalname,
-        },
+        data: { type: 'p12', driveFileId, originalName: req.file.originalname },
       });
     } else if (ext === '.mobileprovision' || ext === '.provisionprofile') {
       let driveFileId = 'local';
       if (isGoogleDriveConfigured()) {
         const result = await uploadBuffer(
-          req.file.buffer,
+          fs.readFileSync(uploadedFile!),
           req.file.originalname,
           getFolderIds().uploads,
           'application/octet-stream'
@@ -126,11 +132,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       }
       res.json({
         success: true,
-        data: {
-          type: 'mobileprovision',
-          driveFileId,
-          originalName: req.file.originalname,
-        },
+        data: { type: 'mobileprovision', driveFileId, originalName: req.file.originalname },
       });
     }
   } catch (err) {
@@ -139,6 +141,8 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       success: false,
       error: err instanceof Error ? err.message : 'Upload failed',
     });
+  } finally {
+    cleanupFile(uploadedFile);
   }
 });
 
