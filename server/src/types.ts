@@ -4,6 +4,7 @@ export interface AppData {
   id: string;
   originalName: string;
   driveFileId: string;
+  localIpaPath?: string;
   signedDriveFileId?: string;
   manifestDriveFileId?: string;
   installUrl?: string;

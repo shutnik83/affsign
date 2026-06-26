@@ -48,7 +48,11 @@ export async function deleteApp(id: string): Promise<boolean> {
 
   const idsToDelete = [app.driveFileId, app.signedDriveFileId, app.manifestDriveFileId].filter(Boolean) as string[];
   for (const fileId of idsToDelete) {
-    await deleteFile(fileId);
+    if (fileId !== 'local') await deleteFile(fileId);
+  }
+
+  if (app.localIpaPath) {
+    try { if (fs.existsSync(app.localIpaPath)) fs.unlinkSync(app.localIpaPath); } catch {}
   }
 
   apps.delete(id);

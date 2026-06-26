@@ -51,6 +51,7 @@ function cleanupDir(dirPath: string): void {
 
 router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
   const uploadedFile = req.file?.path;
+  let ipaKept = false;
 
   try {
     if (!req.file) {
@@ -72,20 +73,10 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
         appInfo.size = req.file.size;
         logger.info(`IPA parsed: ${appInfo.name} (${appInfo.bundleId})`);
 
-        let driveFileId = 'local';
-        if (isGoogleDriveConfigured()) {
-          const fileStream = fs.createReadStream(uploadedFile!);
-          const result = await uploadFileStream(
-            fileStream,
-            req.file.originalname,
-            getFolderIds().uploads,
-            'application/zip'
-          );
-          driveFileId = result.fileId;
-        }
-
-        const app = createApp(driveFileId, req.file.originalname);
+        const app = createApp('local', req.file.originalname);
         app.info = appInfo;
+        app.localIpaPath = uploadedFile;
+        ipaKept = true;
 
         res.json({
           success: true,
@@ -142,7 +133,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       error: err instanceof Error ? err.message : 'Upload failed',
     });
   } finally {
-    cleanupFile(uploadedFile);
+    if (!ipaKept) cleanupFile(uploadedFile);
   }
 });
 

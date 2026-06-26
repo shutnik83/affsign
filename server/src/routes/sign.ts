@@ -56,7 +56,15 @@ router.post('/sign', async (req: Request, res: Response) => {
     if (isGoogleDriveConfigured()) {
       await downloadToFile(p12Key, p12Path);
       await downloadToFile(mobileProvisionKey, provisionPath);
-      await downloadToFile(app.driveFileId, ipaPath);
+      if (app.localIpaPath && fs.existsSync(app.localIpaPath)) {
+        fs.copyFileSync(app.localIpaPath, ipaPath);
+        logger.info(`Using local IPA: ${app.localIpaPath}`);
+      } else if (app.driveFileId && app.driveFileId !== 'local') {
+        await downloadToFile(app.driveFileId, ipaPath);
+      } else {
+        res.status(400).json({ success: false, error: 'IPA file not found. Please re-upload.' });
+        return;
+      }
     } else {
       res.status(500).json({ success: false, error: 'Google Drive storage not configured' });
       return;
