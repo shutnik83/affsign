@@ -28,7 +28,7 @@ export interface UploadResponse {
     type: string;
     info?: AppInfo;
     certificate?: CertificateInfo;
-    r2Key?: string;
+    driveFileId?: string;
     originalName?: string;
   };
   error?: string;

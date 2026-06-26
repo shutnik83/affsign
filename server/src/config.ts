@@ -15,11 +15,13 @@ export const config = {
     root: path.resolve(__dirname, '..'),
     temp: path.join('/tmp', 'affsign'),
   },
-  r2: {
-    accountId: process.env.R2_ACCOUNT_ID || '',
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-    bucket: process.env.R2_BUCKET || '',
-    publicUrl: process.env.R2_PUBLIC_URL || '',
+  google: {
+    projectId: process.env.GOOGLE_PROJECT_ID || '',
+    privateKeyId: process.env.GOOGLE_PRIVATE_KEY_ID || '',
+    privateKey: process.env.GOOGLE_PRIVATE_KEY || '',
+    clientEmail: process.env.GOOGLE_CLIENT_EMAIL || '',
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    folderUploads: process.env.GOOGLE_DRIVE_FOLDER_UPLOADS || '',
+    folderSigned: process.env.GOOGLE_DRIVE_FOLDER_SIGNED || '',
   },
 };

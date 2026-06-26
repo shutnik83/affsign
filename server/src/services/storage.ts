@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config';
 import { logger } from '../logger';
 import { AppData } from '../types';
-import { deleteFromR2 } from './r2';
+import { deleteFile } from './googleDrive';
 
 const apps = new Map<string, AppData>();
 
@@ -19,12 +19,12 @@ export function generateId(): string {
   return uuidv4().replace(/-/g, '').substring(0, 16);
 }
 
-export function createApp(r2Key: string, originalName: string): AppData {
+export function createApp(driveFileId: string, originalName: string): AppData {
   const id = generateId();
   const app: AppData = {
     id,
     originalName,
-    r2Key,
+    driveFileId,
     status: 'uploaded',
   };
   apps.set(id, app);
@@ -46,9 +46,9 @@ export async function deleteApp(id: string): Promise<boolean> {
   const app = apps.get(id);
   if (!app) return false;
 
-  const keysToDelete = [app.r2Key, app.signedR2Key, app.manifestR2Key].filter(Boolean) as string[];
-  for (const key of keysToDelete) {
-    await deleteFromR2(key);
+  const idsToDelete = [app.driveFileId, app.signedDriveFileId, app.manifestDriveFileId].filter(Boolean) as string[];
+  for (const fileId of idsToDelete) {
+    await deleteFile(fileId);
   }
 
   apps.delete(id);

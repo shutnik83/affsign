@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { getApp } from '../services/storage';
-import { getPublicUrl, isR2Configured } from '../services/r2';
+import { getPublicUrl, isGoogleDriveConfigured } from '../services/googleDrive';
 
 const router = Router();
 
-router.get('/install/:id', (req: Request, res: Response) => {
+router.get('/install/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   const app = getApp(id);
 
@@ -18,12 +18,12 @@ router.get('/install/:id', (req: Request, res: Response) => {
     return;
   }
 
-  if (!app.manifestR2Key || !isR2Configured()) {
+  if (!app.manifestDriveFileId || !isGoogleDriveConfigured()) {
     res.status(404).send(generateNotFoundPage());
     return;
   }
 
-  const url = getPublicUrl(app.manifestR2Key);
+  const url = await getPublicUrl(app.manifestDriveFileId);
   res.redirect(url);
 });
 

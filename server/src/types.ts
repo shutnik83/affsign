@@ -3,9 +3,9 @@ import { Request } from 'express';
 export interface AppData {
   id: string;
   originalName: string;
-  r2Key: string;
-  signedR2Key?: string;
-  manifestR2Key?: string;
+  driveFileId: string;
+  signedDriveFileId?: string;
+  manifestDriveFileId?: string;
   installUrl?: string;
   otaLink?: string;
   info?: AppInfo;

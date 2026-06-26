@@ -1,18 +1,17 @@
 import { Router, Request, Response } from 'express';
-import { getPublicUrl, isR2Configured } from '../services/r2';
+import { getPublicUrl, isGoogleDriveConfigured } from '../services/googleDrive';
 
 const router = Router();
 
-router.get('/manifest/:key', (req: Request, res: Response) => {
-  const { key } = req.params;
+router.get('/manifest/:fileId', async (req: Request, res: Response) => {
+  const { fileId } = req.params;
 
-  if (!isR2Configured()) {
-    res.status(500).json({ success: false, error: 'R2 storage not configured' });
+  if (!isGoogleDriveConfigured()) {
+    res.status(500).json({ success: false, error: 'Google Drive storage not configured' });
     return;
   }
 
-  const r2Key = `manifests/${key}`;
-  const url = getPublicUrl(r2Key);
+  const url = await getPublicUrl(fileId);
   res.redirect(url);
 });
 

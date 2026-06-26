@@ -5,7 +5,7 @@ import path from 'path';
 import { config } from '../config';
 import { createApp } from '../services/storage';
 import { extractIpa, parseAppInfo } from '../services/ipaParser';
-import { uploadBufferToR2, generateR2Key, isR2Configured } from '../services/r2';
+import { uploadBuffer, isGoogleDriveConfigured } from '../services/googleDrive';
 import { logger } from '../logger';
 
 const router = Router();
@@ -34,7 +34,6 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     const ext = path.extname(req.file.originalname).toLowerCase();
 
     if (ext === '.ipa') {
-      const r2Key = generateR2Key('ipas', req.file.originalname);
       const tempPath = path.join(config.paths.temp, `upload_${Date.now()}${ext}`);
 
       try {
@@ -49,12 +48,18 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
           const appInfo = parseAppInfo(tempExtractDir);
           appInfo.size = req.file.size;
 
-          let finalR2Key = r2Key;
-          if (isR2Configured()) {
-            await uploadBufferToR2(req.file.buffer, r2Key, 'application/zip');
+          let driveFileId = 'local';
+          if (isGoogleDriveConfigured()) {
+            const result = await uploadBuffer(
+              req.file.buffer,
+              req.file.originalname,
+              config.google.folderUploads,
+              'application/zip'
+            );
+            driveFileId = result.fileId;
           }
 
-          const app = createApp(finalR2Key, req.file.originalname);
+          const app = createApp(driveFileId, req.file.originalname);
           app.info = appInfo;
 
           res.json({
@@ -86,28 +91,40 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
         });
       }
     } else if (ext === '.p12') {
-      const r2Key = generateR2Key('certs', req.file.originalname);
-      if (isR2Configured()) {
-        await uploadBufferToR2(req.file.buffer, r2Key, 'application/x-pkcs12');
+      let driveFileId = 'local';
+      if (isGoogleDriveConfigured()) {
+        const result = await uploadBuffer(
+          req.file.buffer,
+          req.file.originalname,
+          config.google.folderUploads,
+          'application/x-pkcs12'
+        );
+        driveFileId = result.fileId;
       }
       res.json({
         success: true,
         data: {
           type: 'p12',
-          r2Key,
+          driveFileId,
           originalName: req.file.originalname,
         },
       });
     } else if (ext === '.mobileprovision' || ext === '.provisionprofile') {
-      const r2Key = generateR2Key('provisions', req.file.originalname);
-      if (isR2Configured()) {
-        await uploadBufferToR2(req.file.buffer, r2Key, 'application/octet-stream');
+      let driveFileId = 'local';
+      if (isGoogleDriveConfigured()) {
+        const result = await uploadBuffer(
+          req.file.buffer,
+          req.file.originalname,
+          config.google.folderUploads,
+          'application/octet-stream'
+        );
+        driveFileId = result.fileId;
       }
       res.json({
         success: true,
         data: {
           type: 'mobileprovision',
-          r2Key,
+          driveFileId,
           originalName: req.file.originalname,
         },
       });

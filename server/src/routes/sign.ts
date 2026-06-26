@@ -6,7 +6,7 @@ import { getApp, updateApp } from '../services/storage';
 import { parseP12Certificate, validateMobileProvision } from '../services/certificateParser';
 import { signIPA } from '../services/signer';
 import { generateQRCode } from '../services/otaGenerator';
-import { downloadFromR2, uploadFileToR2, generateR2Key, isR2Configured } from '../services/r2';
+import { downloadToFile, uploadBuffer, uploadFileStream, isGoogleDriveConfigured, getPublicUrl } from '../services/googleDrive';
 import { logger } from '../logger';
 
 const router = Router();
@@ -53,12 +53,12 @@ router.post('/sign', async (req: Request, res: Response) => {
 
     tempFiles.push(p12Path, provisionPath, ipaPath, signedPath, tempDir);
 
-    if (isR2Configured()) {
-      await downloadFromR2(p12Key, p12Path);
-      await downloadFromR2(mobileProvisionKey, provisionPath);
-      await downloadFromR2(app.r2Key, ipaPath);
+    if (isGoogleDriveConfigured()) {
+      await downloadToFile(p12Key, p12Path);
+      await downloadToFile(mobileProvisionKey, provisionPath);
+      await downloadToFile(app.driveFileId, ipaPath);
     } else {
-      res.status(500).json({ success: false, error: 'R2 storage not configured' });
+      res.status(500).json({ success: false, error: 'Google Drive storage not configured' });
       return;
     }
 
@@ -109,12 +109,18 @@ router.post('/sign', async (req: Request, res: Response) => {
       certInfo,
     });
 
-    const signedR2Key = generateR2Key('signed', `signed_${app.originalName}`);
-    await uploadFileToR2(signedIpaPath, signedR2Key, 'application/zip');
+    const signedFile = await uploadFileStream(
+      fs.createReadStream(signedIpaPath),
+      `signed_${app.originalName}`,
+      config.google.folderSigned,
+      'application/zip'
+    );
+
+    const signedDriveFileId = signedFile.fileId;
 
     updateApp(appId, {
       status: 'signed',
-      signedR2Key,
+      signedDriveFileId,
       certificate: certInfo,
       signedAt: new Date().toISOString(),
     });
@@ -122,7 +128,7 @@ router.post('/sign', async (req: Request, res: Response) => {
     const updatedApp = getApp(appId)!;
 
     const manifestId = updatedApp.id;
-    const signedDownloadUrl = `${config.r2.publicUrl}/${signedR2Key}`;
+    const signedDownloadUrl = signedFile.publicUrl;
 
     const manifestContent = generateManifestContent(
       updatedApp.info!,
@@ -131,22 +137,24 @@ router.post('/sign', async (req: Request, res: Response) => {
       manifestId
     );
 
-    const manifestR2Key = generateR2Key('manifests', `${manifestId}.plist`);
-    await uploadFileToR2(
+    const manifestFile = await uploadBuffer(
       Buffer.from(manifestContent, 'utf-8'),
-      manifestR2Key,
+      `${manifestId}.plist`,
+      config.google.folderSigned,
       'application/xml'
     );
 
-    const manifestUrl = `${config.protocol}://${config.domain}/api/manifest/${manifestR2Key}`;
+    const manifestDriveFileId = manifestFile.fileId;
+
+    const manifestUrl = `${config.protocol}://${config.domain}/api/manifest/${manifestDriveFileId}`;
     const otaLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`;
     const installPageUrl = `${config.protocol}://${config.domain}/api/install/${manifestId}`;
 
     const installPageContent = generateInstallPageContent(updatedApp.info!, manifestUrl, otaLink, manifestId);
-    const installR2Key = generateR2Key('install', `${manifestId}/index.html`);
-    await uploadFileToR2(
+    const installFile = await uploadBuffer(
       Buffer.from(installPageContent, 'utf-8'),
-      installR2Key,
+      `${manifestId}_install.html`,
+      config.google.folderSigned,
       'text/html'
     );
 
@@ -156,7 +164,7 @@ router.post('/sign', async (req: Request, res: Response) => {
     } catch {}
 
     updateApp(appId, {
-      manifestR2Key,
+      manifestDriveFileId,
       installUrl: installPageUrl,
       otaLink,
     });
