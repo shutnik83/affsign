@@ -24,12 +24,12 @@ interface IPAData {
 }
 
 interface P12Data {
-  r2Key: string;
+  driveFileId: string;
   originalName: string;
 }
 
 interface ProvisionData {
-  r2Key: string;
+  driveFileId: string;
   originalName: string;
 }
 
@@ -82,7 +82,7 @@ export default function App() {
     try {
       const res = await uploadFile(file, (p) => setUploadProgress((prev) => ({ ...prev, p12: p })));
       if (res.success && res.data) {
-        setP12Data({ r2Key: res.data.r2Key!, originalName: res.data.originalName! });
+        setP12Data({ driveFileId: res.data.driveFileId!, originalName: res.data.originalName! });
       } else {
         setError(res.error || 'Failed to upload P12');
       }
@@ -98,7 +98,7 @@ export default function App() {
     try {
       const res = await uploadFile(file, (p) => setUploadProgress((prev) => ({ ...prev, provision: p })));
       if (res.success && res.data) {
-        setProvisionData({ r2Key: res.data.r2Key!, originalName: res.data.originalName! });
+        setProvisionData({ driveFileId: res.data.driveFileId!, originalName: res.data.originalName! });
       } else {
         setError(res.error || 'Failed to upload MobileProvision');
       }
@@ -129,7 +129,7 @@ export default function App() {
     setIsSigning(true);
     setError(null);
     try {
-      const res = await signApp(ipaData.id, p12Data.r2Key, p12Password, provisionData.r2Key);
+      const res = await signApp(ipaData.id, p12Data.driveFileId, p12Password, provisionData.driveFileId);
       if (res.success && res.data) {
         setSignResult({
           downloadUrl: res.data.downloadUrl,
