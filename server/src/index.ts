@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import path from 'path';
 import { config } from './config';
 import { logger } from './logger';
 import { initStorage, cleanupOldApps } from './services/storage';
@@ -33,6 +34,12 @@ app.use('/api', manifestRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+const publicPath = path.join(__dirname, 'public', 'client');
+app.use(express.static(publicPath));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 app.use(errorHandler);
