@@ -23,4 +23,5 @@ export const config = {
     folderUploads: process.env.GOOGLE_DRIVE_FOLDER_UPLOADS || '',
     folderSigned: process.env.GOOGLE_DRIVE_FOLDER_SIGNED || '',
   },
+  adminPassword: process.env.ADMIN_PASSWORD || '',
 };

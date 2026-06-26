@@ -7,6 +7,7 @@ import { CertificateInfoCard } from './components/CertificateInfoCard';
 import { SigningPanel } from './components/SigningPanel';
 import { ResultPanel } from './components/ResultPanel';
 import { HistoryPanel } from './components/HistoryPanel';
+import { AdminPanel } from './components/AdminPanel';
 import { uploadFile, signApp, saveToHistory } from './api/client';
 import { useLanguage } from './i18n/LanguageContext';
 import { useTheme } from './i18n/ThemeContext';
@@ -296,6 +297,7 @@ export default function App() {
           )}
         </AnimatePresence>
       </div>
+      <AdminPanel />
     </div>
   );
 }

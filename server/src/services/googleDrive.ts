@@ -4,38 +4,49 @@ import path from 'path';
 import { Readable } from 'stream';
 import { config } from '../config';
 import { logger } from '../logger';
+import { getCurrentAccount, type GoogleAccount } from './accountStore';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 
 let driveClient: ReturnType<typeof google.drive> | null = null;
 let oauth2Client: InstanceType<typeof google.auth.OAuth2> | null = null;
+let activeAccountId: string | null = null;
 
 let cachedFolderUploads = config.google.folderUploads;
 let cachedFolderSigned = config.google.folderSigned;
 
-function getOAuth2Client() {
-  if (!oauth2Client) {
-    oauth2Client = new google.auth.OAuth2(
-      config.google.oauthClientId,
-      config.google.oauthClientSecret,
-      config.google.redirectUri
-    );
-    if (config.google.refreshToken) {
-      oauth2Client.setCredentials({ refresh_token: config.google.refreshToken });
-    }
+function getOAuth2Client(account?: GoogleAccount | null): InstanceType<typeof google.auth.OAuth2> {
+  const acct = account || getCurrentAccount();
+  const token = acct?.refreshToken || config.google.refreshToken;
+
+  if (oauth2Client && activeAccountId === (acct?.id || 'env')) {
+    return oauth2Client;
   }
+
+  oauth2Client = new google.auth.OAuth2(
+    config.google.oauthClientId,
+    config.google.oauthClientSecret,
+    config.google.redirectUri
+  );
+  if (token) {
+    oauth2Client.setCredentials({ refresh_token: token });
+  }
+  activeAccountId = acct?.id || 'env';
+  driveClient = null;
   return oauth2Client;
 }
 
-function getDrive() {
-  if (!driveClient) {
-    const auth = getOAuth2Client();
+function getDrive(account?: GoogleAccount | null) {
+  if (!driveClient || account) {
+    const auth = getOAuth2Client(account);
     driveClient = google.drive({ version: 'v3', auth });
   }
   return driveClient;
 }
 
 export function isGoogleDriveConfigured(): boolean {
+  const acct = getCurrentAccount();
+  if (acct) return !!(config.google.oauthClientId && config.google.oauthClientSecret);
   return !!(config.google.oauthClientId && config.google.oauthClientSecret && config.google.refreshToken);
 }
 
@@ -57,8 +68,7 @@ export async function handleAuthCallback(code: string): Promise<string> {
   return refreshToken;
 }
 
-async function findOrCreateFolder(name: string): Promise<string> {
-  const drive = getDrive();
+async function findOrCreateFolder(drive: ReturnType<typeof google.drive>, name: string): Promise<string> {
   const res = await drive.files.list({
     q: `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id, name)',
@@ -85,11 +95,13 @@ export async function ensureFolders(): Promise<void> {
   if (!isGoogleDriveConfigured()) return;
 
   if (!cachedFolderUploads) {
-    cachedFolderUploads = await findOrCreateFolder('Uploads');
+    const drive = getDrive();
+    cachedFolderUploads = await findOrCreateFolder(drive, 'Uploads');
     logger.info(`Uploads folder: ${cachedFolderUploads}`);
   }
   if (!cachedFolderSigned) {
-    cachedFolderSigned = await findOrCreateFolder('Signed');
+    const drive = getDrive();
+    cachedFolderSigned = await findOrCreateFolder(drive, 'Signed');
     logger.info(`Signed folder: ${cachedFolderSigned}`);
   }
 }
@@ -114,8 +126,7 @@ function generateFileName(filename: string): string {
   return `${timestamp}_${random}_${safeName}${ext}`;
 }
 
-async function makePublic(fileId: string): Promise<string> {
-  const drive = getDrive();
+async function makePublic(drive: ReturnType<typeof google.drive>, fileId: string): Promise<string> {
   await drive.permissions.create({
     fileId,
     requestBody: {
@@ -148,7 +159,7 @@ export async function uploadBuffer(
   });
 
   const fileId = res.data.id!;
-  const publicUrl = await makePublic(fileId);
+  const publicUrl = await makePublic(drive, fileId);
   logger.info(`Uploaded to Drive: ${fileName} (id: ${fileId})`);
   return { fileId, publicUrl };
 }
@@ -175,7 +186,7 @@ export async function uploadFileStream(
   });
 
   const fileId = res.data.id!;
-  const publicUrl = await makePublic(fileId);
+  const publicUrl = await makePublic(drive, fileId);
   logger.info(`Uploaded stream to Drive: ${fileName} (id: ${fileId})`);
   return { fileId, publicUrl };
 }
@@ -205,7 +216,7 @@ export async function downloadToFile(
       })
       .on('error', (err) => {
         dest.close();
-        fs.unlinkSync(localPath);
+        try { fs.unlinkSync(localPath); } catch {}
         reject(err);
       })
       .pipe(dest);
