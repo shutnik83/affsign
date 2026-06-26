@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, X, Trash2, Check, LogIn, Plus, ExternalLink } from 'lucide-react';
+import { Settings, X, Trash2, Check, LogIn, Plus } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 
 const API_BASE = '/api';
