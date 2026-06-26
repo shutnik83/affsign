@@ -8,27 +8,50 @@ import { logger } from '../logger';
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 
 let driveClient: ReturnType<typeof google.drive> | null = null;
+let oauth2Client: InstanceType<typeof google.auth.OAuth2> | null = null;
+
+function getOAuth2Client() {
+  if (!oauth2Client) {
+    oauth2Client = new google.auth.OAuth2(
+      config.google.oauthClientId,
+      config.google.oauthClientSecret,
+      config.google.redirectUri
+    );
+    if (config.google.refreshToken) {
+      oauth2Client.setCredentials({ refresh_token: config.google.refreshToken });
+    }
+  }
+  return oauth2Client;
+}
 
 function getDrive() {
   if (!driveClient) {
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        type: 'service_account',
-        project_id: config.google.projectId,
-        private_key_id: config.google.privateKeyId,
-        private_key: config.google.privateKey.replace(/\\n/g, '\n'),
-        client_email: config.google.clientEmail,
-        client_id: config.google.clientId,
-      },
-      scopes: SCOPES,
-    });
+    const auth = getOAuth2Client();
     driveClient = google.drive({ version: 'v3', auth });
   }
   return driveClient;
 }
 
 export function isGoogleDriveConfigured(): boolean {
-  return !!(config.google.projectId && config.google.privateKey && config.google.clientEmail);
+  return !!(config.google.oauthClientId && config.google.oauthClientSecret && config.google.refreshToken);
+}
+
+export function getAuthUrl(): string {
+  const client = getOAuth2Client();
+  return client.generateAuthUrl({
+    access_type: 'offline',
+    scope: SCOPES,
+    prompt: 'consent',
+  });
+}
+
+export async function handleAuthCallback(code: string): Promise<string> {
+  const client = getOAuth2Client();
+  const { tokens } = await client.getToken(code);
+  client.setCredentials(tokens);
+  const refreshToken = tokens.refresh_token || '';
+  logger.info('Google OAuth2 authorized successfully');
+  return refreshToken;
 }
 
 function generateFileName(filename: string): string {

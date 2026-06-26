@@ -12,6 +12,7 @@ import { downloadRouter } from './routes/download';
 import { appRouter } from './routes/app';
 import { historyRouter } from './routes/history';
 import { manifestRouter } from './routes/manifest';
+import { authRouter } from './routes/auth';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -31,6 +32,7 @@ app.use('/api', downloadRouter);
 app.use('/api', appRouter);
 app.use('/api', historyRouter);
 app.use('/api', manifestRouter);
+app.use('/api', authRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
