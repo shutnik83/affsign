@@ -13,6 +13,7 @@ const router = Router();
 
 router.post('/sign', async (req: Request, res: Response) => {
   const tempFiles: string[] = [];
+  let appRef: ReturnType<typeof getApp>;
 
   try {
     const { appId, p12Key, p12Password, mobileProvisionKey } = req.body;
@@ -23,6 +24,7 @@ router.post('/sign', async (req: Request, res: Response) => {
     }
 
     const app = getApp(appId);
+    appRef = app;
     if (!app) {
       res.status(404).json({ success: false, error: 'App not found' });
       return;
@@ -202,6 +204,9 @@ router.post('/sign', async (req: Request, res: Response) => {
       error: `Signing failed: ${err instanceof Error ? err.message : String(err)}`,
     });
   } finally {
+    if (appRef && appRef.localIpaPath) {
+      try { if (fs.existsSync(appRef.localIpaPath)) fs.unlinkSync(appRef.localIpaPath); } catch {}
+    }
     for (const f of tempFiles) {
       try {
         if (fs.existsSync(f)) {

@@ -49,6 +49,30 @@ app.use(errorHandler);
 
 initStorage();
 
+import fs from 'fs';
+const uploadDir = path.join(config.paths.temp, 'uploads');
+try {
+  if (fs.existsSync(uploadDir)) {
+    const files = fs.readdirSync(uploadDir);
+    for (const f of files) {
+      try { fs.unlinkSync(path.join(uploadDir, f)); } catch {}
+    }
+    logger.info(`Cleaned ${files.length} old upload files`);
+  }
+} catch {}
+
+const extractDirs = path.join(config.paths.temp);
+try {
+  if (fs.existsSync(extractDirs)) {
+    const entries = fs.readdirSync(extractDirs, { withFileTypes: true });
+    for (const e of entries) {
+      if (e.isDirectory() && (e.name.startsWith('extract_') || e.name.startsWith('sign_'))) {
+        try { fs.rmSync(path.join(extractDirs, e.name), { recursive: true, force: true }); } catch {}
+      }
+    }
+  }
+} catch {}
+
 if (isGoogleDriveConfigured()) {
   ensureFolders().catch(err => logger.error('Failed to ensure Drive folders:', err));
 }
