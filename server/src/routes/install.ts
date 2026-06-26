@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { getApp } from '../services/storage';
-import { getPublicUrl, isGoogleDriveConfigured } from '../services/googleDrive';
 
 const router = Router();
 
-router.get('/install/:id', async (req: Request, res: Response) => {
+router.get('/install/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   const app = getApp(id);
 
@@ -18,13 +17,13 @@ router.get('/install/:id', async (req: Request, res: Response) => {
     return;
   }
 
-  if (!app.manifestDriveFileId || !isGoogleDriveConfigured()) {
+  if (!app.installPageContent) {
     res.status(404).send(generateNotFoundPage());
     return;
   }
 
-  const url = await getPublicUrl(app.manifestDriveFileId);
-  res.redirect(url);
+  res.setHeader('Content-Type', 'text/html');
+  res.send(app.installPageContent);
 });
 
 function generateNotFoundPage(): string {

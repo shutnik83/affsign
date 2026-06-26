@@ -9,6 +9,8 @@ export interface AppData {
   manifestDriveFileId?: string;
   installUrl?: string;
   otaLink?: string;
+  manifestContent?: string;
+  installPageContent?: string;
   info?: AppInfo;
   certificate?: CertificateInfo;
   signedAt?: string;

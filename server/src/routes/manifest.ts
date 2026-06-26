@@ -1,18 +1,19 @@
 import { Router, Request, Response } from 'express';
-import { getPublicUrl, isGoogleDriveConfigured } from '../services/googleDrive';
+import { getApp } from '../services/storage';
 
 const router = Router();
 
-router.get('/manifest/:fileId', async (req: Request, res: Response) => {
-  const { fileId } = req.params;
+router.get('/manifest/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const app = getApp(id);
 
-  if (!isGoogleDriveConfigured()) {
-    res.status(500).json({ success: false, error: 'Google Drive storage not configured' });
+  if (!app || !app.manifestContent) {
+    res.status(404).json({ success: false, error: 'Manifest not found' });
     return;
   }
 
-  const url = await getPublicUrl(fileId);
-  res.redirect(url);
+  res.setHeader('Content-Type', 'application/xml');
+  res.send(app.manifestContent);
 });
 
 export { router as manifestRouter };

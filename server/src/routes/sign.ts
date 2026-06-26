@@ -6,7 +6,7 @@ import { getApp, updateApp } from '../services/storage';
 import { parseP12Certificate, validateMobileProvision } from '../services/certificateParser';
 import { signIPA } from '../services/signer';
 import { generateQRCode } from '../services/otaGenerator';
-import { downloadToFile, uploadBuffer, uploadFileStream, isGoogleDriveConfigured, getPublicUrl, getFolderIds } from '../services/googleDrive';
+import { downloadToFile, uploadFileStream, isGoogleDriveConfigured, getFolderIds } from '../services/googleDrive';
 import { logger } from '../logger';
 
 const router = Router();
@@ -53,6 +53,8 @@ router.post('/sign', async (req: Request, res: Response) => {
 
     tempFiles.push(p12Path, provisionPath, ipaPath, signedPath, tempDir);
 
+    logger.info(`Downloading P12 and MobileProvision from Drive...`);
+
     if (isGoogleDriveConfigured()) {
       await downloadToFile(p12Key, p12Path);
       await downloadToFile(mobileProvisionKey, provisionPath);
@@ -69,6 +71,8 @@ router.post('/sign', async (req: Request, res: Response) => {
       res.status(500).json({ success: false, error: 'Google Drive storage not configured' });
       return;
     }
+
+    logger.info(`Files downloaded, starting signing...`);
 
     if (!fs.existsSync(p12Path)) {
       res.status(400).json({ success: false, error: 'P12 file not found. Please re-upload.' });
@@ -107,6 +111,8 @@ router.post('/sign', async (req: Request, res: Response) => {
 
     updateApp(appId, { status: 'signing' });
 
+    logger.info(`Signing IPA...`);
+
     const signedIpaPath = await signIPA({
       ipaPath,
       p12Buffer,
@@ -117,65 +123,57 @@ router.post('/sign', async (req: Request, res: Response) => {
       certInfo,
     });
 
-    const signedFile = await uploadFileStream(
-      fs.createReadStream(signedIpaPath),
-      `signed_${app.originalName}`,
-      getFolderIds().signed,
-      'application/zip'
+    logger.info(`IPA signed, uploading to Drive...`);
+
+    let signedDriveFileId = 'local';
+    let signedPublicUrl = '';
+    if (isGoogleDriveConfigured()) {
+      const signedFile = await uploadFileStream(
+        fs.createReadStream(signedIpaPath),
+        `signed_${app.originalName}`,
+        getFolderIds().signed,
+        'application/zip'
+      );
+      signedDriveFileId = signedFile.fileId;
+      signedPublicUrl = signedFile.publicUrl;
+    }
+
+    logger.info(`Signed IPA uploaded to Drive`);
+
+    const manifestId = appId;
+
+    const manifestContent = generateManifestContent(
+      app.info!,
+      certInfo,
+      signedPublicUrl,
+      manifestId
     );
 
-    const signedDriveFileId = signedFile.fileId;
+    const installPageContent = generateInstallPageContent(
+      app.info!,
+      `${config.protocol}://${config.domain}/api/manifest/${manifestId}`,
+      `itms-services://?action=download-manifest&url=${encodeURIComponent(`${config.protocol}://${config.domain}/api/manifest/${manifestId}`)}`,
+      manifestId
+    );
+
+    let qrCodeDataUrl: string | undefined;
+    const otaLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(`${config.protocol}://${config.domain}/api/manifest/${manifestId}`)}`;
+    try {
+      qrCodeDataUrl = await generateQRCode(otaLink);
+    } catch {}
 
     updateApp(appId, {
       status: 'signed',
       signedDriveFileId,
       certificate: certInfo,
       signedAt: new Date().toISOString(),
+      installUrl: `${config.protocol}://${config.domain}/api/install/${manifestId}`,
+      otaLink,
+      manifestContent,
+      installPageContent,
     });
 
     const updatedApp = getApp(appId)!;
-
-    const manifestId = updatedApp.id;
-    const signedDownloadUrl = signedFile.publicUrl;
-
-    const manifestContent = generateManifestContent(
-      updatedApp.info!,
-      certInfo,
-      signedDownloadUrl,
-      manifestId
-    );
-
-    const manifestFile = await uploadBuffer(
-      Buffer.from(manifestContent, 'utf-8'),
-      `${manifestId}.plist`,
-      getFolderIds().signed,
-      'application/xml'
-    );
-
-    const manifestDriveFileId = manifestFile.fileId;
-
-    const manifestUrl = `${config.protocol}://${config.domain}/api/manifest/${manifestDriveFileId}`;
-    const otaLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`;
-    const installPageUrl = `${config.protocol}://${config.domain}/api/install/${manifestId}`;
-
-    const installPageContent = generateInstallPageContent(updatedApp.info!, manifestUrl, otaLink, manifestId);
-    const installFile = await uploadBuffer(
-      Buffer.from(installPageContent, 'utf-8'),
-      `${manifestId}_install.html`,
-      getFolderIds().signed,
-      'text/html'
-    );
-
-    let qrCodeDataUrl: string | undefined;
-    try {
-      qrCodeDataUrl = await generateQRCode(otaLink);
-    } catch {}
-
-    updateApp(appId, {
-      manifestDriveFileId,
-      installUrl: installPageUrl,
-      otaLink,
-    });
 
     res.json({
       success: true,
@@ -187,7 +185,7 @@ router.post('/sign', async (req: Request, res: Response) => {
         downloadUrl: `/api/download/${appId}`,
         installUrl: `/api/install/${appId}`,
         otaLink,
-        manifestUrl,
+        manifestUrl: `${config.protocol}://${config.domain}/api/manifest/${manifestId}`,
         qrCodeDataUrl,
         signedAt: updatedApp.signedAt,
       },
