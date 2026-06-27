@@ -170,12 +170,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen text-[var(--text-primary)] relative">
-      <div className="fixed left-3 top-1/2 -translate-y-1/2 -rotate-90 origin-center text-[var(--cyan)] text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none whitespace-nowrap z-0 opacity-20">
-        катя я тебя люблю ♥
-      </div>
-      <div className="fixed right-3 top-1/2 -translate-y-1/2 rotate-90 origin-center text-[var(--cyan)] text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none whitespace-nowrap z-0 opacity-20">
-        катя я тебя люблю ♥
-      </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8 relative z-10">
         <motion.header
@@ -286,10 +280,6 @@ export default function App() {
             )}
           </motion.div>
         </AnimatePresence>
-      </div>
-
-      <div className="text-center pb-6 text-[var(--cyan)] text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none opacity-20">
-        катя я тебя люблю ♥
       </div>
       <AdminPanel />
     </div>
