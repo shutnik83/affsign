@@ -96,6 +96,16 @@ export function rotateAccount(): GoogleAccount | null {
   return data.accounts[data.currentAccountIndex];
 }
 
+export function updateAccountFolders(id: string, folderUploads: string, folderSigned: string): void {
+  const data = loadAccounts();
+  const acct = data.accounts.find((a) => a.id === id);
+  if (acct) {
+    acct.folderUploads = folderUploads;
+    acct.folderSigned = folderSigned;
+    saveAccounts(data);
+  }
+}
+
 export function getActiveAccountId(): string | null {
   const data = loadAccounts();
   if (data.accounts.length === 0) return null;

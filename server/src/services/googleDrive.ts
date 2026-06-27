@@ -4,41 +4,40 @@ import path from 'path';
 import { Readable } from 'stream';
 import { config } from '../config';
 import { logger } from '../logger';
-import { getCurrentAccount, type GoogleAccount } from './accountStore';
+import { getCurrentAccount, updateAccountFolders, type GoogleAccount } from './accountStore';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 
 let driveClient: ReturnType<typeof google.drive> | null = null;
 let oauth2Client: InstanceType<typeof google.auth.OAuth2> | null = null;
-let activeAccountId: string | null = null;
+let currentAcctId: string | null = null;
 
-let cachedFolderUploads = config.google.folderUploads;
-let cachedFolderSigned = config.google.folderSigned;
-
-function getOAuth2Client(account?: GoogleAccount | null): InstanceType<typeof google.auth.OAuth2> {
-  const acct = account || getCurrentAccount();
+function getOAuth2Client(): InstanceType<typeof google.auth.OAuth2> {
+  const acct = getCurrentAccount();
   const token = acct?.refreshToken || config.google.refreshToken;
+  const acctId = acct?.id || 'env';
 
-  if (oauth2Client && activeAccountId === (acct?.id || 'env')) {
+  if (oauth2Client && currentAcctId === acctId) {
     return oauth2Client;
   }
 
   oauth2Client = new google.auth.OAuth2(
     config.google.oauthClientId,
     config.google.oauthClientSecret,
-    config.google.redirectUri
+    `${config.protocol}://${config.domain}/api/auth/google/callback`
   );
   if (token) {
     oauth2Client.setCredentials({ refresh_token: token });
   }
-  activeAccountId = acct?.id || 'env';
+  currentAcctId = acctId;
   driveClient = null;
+  logger.info(`Switched Drive client to account: ${acct?.email || 'env'}`);
   return oauth2Client;
 }
 
-function getDrive(account?: GoogleAccount | null) {
-  if (!driveClient || account) {
-    const auth = getOAuth2Client(account);
+function getDrive(): ReturnType<typeof google.drive> {
+  if (!driveClient) {
+    const auth = getOAuth2Client();
     driveClient = google.drive({ version: 'v3', auth });
   }
   return driveClient;
@@ -79,10 +78,7 @@ async function findOrCreateFolder(drive: ReturnType<typeof google.drive>, name: 
   }
 
   const createRes = await drive.files.create({
-    requestBody: {
-      name,
-      mimeType: 'application/vnd.google-apps.folder',
-    },
+    requestBody: { name, mimeType: 'application/vnd.google-apps.folder' },
     fields: 'id',
   });
 
@@ -93,29 +89,32 @@ async function findOrCreateFolder(drive: ReturnType<typeof google.drive>, name: 
 
 export async function ensureFolders(): Promise<void> {
   if (!isGoogleDriveConfigured()) return;
+  const acct = getCurrentAccount();
+  if (!acct) return;
 
-  if (!cachedFolderUploads) {
+  if (!acct.folderUploads || !acct.folderSigned) {
     const drive = getDrive();
-    cachedFolderUploads = await findOrCreateFolder(drive, 'Uploads');
-    logger.info(`Uploads folder: ${cachedFolderUploads}`);
+    if (!acct.folderUploads) {
+      acct.folderUploads = await findOrCreateFolder(drive, 'Uploads');
+      logger.info(`Uploads folder: ${acct.folderUploads}`);
+    }
+    if (!acct.folderSigned) {
+      acct.folderSigned = await findOrCreateFolder(drive, 'Signed');
+      logger.info(`Signed folder: ${acct.folderSigned}`);
+    }
+    updateAccountFolders(acct.id, acct.folderUploads, acct.folderSigned);
   }
-  if (!cachedFolderSigned) {
-    const drive = getDrive();
-    cachedFolderSigned = await findOrCreateFolder(drive, 'Signed');
-    logger.info(`Signed folder: ${cachedFolderSigned}`);
-  }
-}
-
-function getUploadsFolder(): string {
-  return cachedFolderUploads || config.google.folderUploads;
-}
-
-function getSignedFolder(): string {
-  return cachedFolderSigned || config.google.folderSigned;
 }
 
 export function getFolderIds(): { uploads: string; signed: string } {
-  return { uploads: getUploadsFolder(), signed: getSignedFolder() };
+  const acct = getCurrentAccount();
+  if (acct) {
+    return {
+      uploads: acct.folderUploads || config.google.folderUploads,
+      signed: acct.folderSigned || config.google.folderSigned,
+    };
+  }
+  return { uploads: config.google.folderUploads, signed: config.google.folderSigned };
 }
 
 function generateFileName(filename: string): string {
@@ -129,10 +128,7 @@ function generateFileName(filename: string): string {
 async function makePublic(drive: ReturnType<typeof google.drive>, fileId: string): Promise<string> {
   await drive.permissions.create({
     fileId,
-    requestBody: {
-      role: 'reader',
-      type: 'anyone',
-    },
+    requestBody: { role: 'reader', type: 'anyone' },
   });
   return `https://drive.google.com/uc?export=download&id=${fileId}`;
 }
@@ -147,14 +143,8 @@ export async function uploadBuffer(
   const fileName = generateFileName(originalName);
 
   const res = await drive.files.create({
-    requestBody: {
-      name: fileName,
-      parents: [folderId],
-    },
-    media: {
-      mimeType: mimeType || 'application/octet-stream',
-      body: Readable.from(buffer),
-    },
+    requestBody: { name: fileName, parents: [folderId] },
+    media: { mimeType: mimeType || 'application/octet-stream', body: Readable.from(buffer) },
     fields: 'id',
   });
 
@@ -174,14 +164,8 @@ export async function uploadFileStream(
   const fileName = generateFileName(originalName);
 
   const res = await drive.files.create({
-    requestBody: {
-      name: fileName,
-      parents: [folderId],
-    },
-    media: {
-      mimeType: mimeType || 'application/octet-stream',
-      body: fileStream,
-    },
+    requestBody: { name: fileName, parents: [folderId] },
+    media: { mimeType: mimeType || 'application/octet-stream', body: fileStream },
     fields: 'id',
   });
 
@@ -191,34 +175,18 @@ export async function uploadFileStream(
   return { fileId, publicUrl };
 }
 
-export async function downloadToFile(
-  fileId: string,
-  localPath: string
-): Promise<void> {
+export async function downloadToFile(fileId: string, localPath: string): Promise<void> {
   const drive = getDrive();
   const dir = path.dirname(localPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-  const res = await drive.files.get(
-    { fileId, alt: 'media' },
-    { responseType: 'stream' }
-  );
+  const res = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
 
   return new Promise((resolve, reject) => {
     const dest = fs.createWriteStream(localPath);
     res.data
-      .on('end', () => {
-        dest.close();
-        logger.info(`Downloaded from Drive: ${fileId} -> ${localPath}`);
-        resolve();
-      })
-      .on('error', (err) => {
-        dest.close();
-        try { fs.unlinkSync(localPath); } catch {}
-        reject(err);
-      })
+      .on('end', () => { dest.close(); logger.info(`Downloaded from Drive: ${fileId}`); resolve(); })
+      .on('error', (err) => { dest.close(); try { fs.unlinkSync(localPath); } catch {} reject(err); })
       .pipe(dest);
   });
 }
