@@ -7,11 +7,10 @@ import { CertificateInfoCard } from './components/CertificateInfoCard';
 import { SigningPanel } from './components/SigningPanel';
 import { ResultPanel } from './components/ResultPanel';
 import { AdminPanel } from './components/AdminPanel';
+import { NewsPanel } from './components/NewsPanel';
 import { uploadFile, signApp, saveToHistory } from './api/client';
 import { useLanguage } from './i18n/LanguageContext';
 import { useTheme } from './i18n/ThemeContext';
-
-type Tab = 'sign';
 
 interface IPAData {
   id: string;
@@ -177,6 +176,9 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12 relative"
         >
+          <div className="absolute top-0 left-0">
+            <NewsPanel />
+          </div>
           <div className="absolute top-0 right-0 flex items-center gap-2">
             <button
               onClick={toggleLocale}
@@ -205,7 +207,6 @@ export default function App() {
 
         <div className="flex justify-center gap-2 mb-8">
           <button
-            onClick={() => setActiveTab('sign')}
             className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200 btn-glass shadow-lg shadow-blue-500/20"
           >
             <FileUp className="w-4 h-4" />
