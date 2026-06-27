@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { google } from 'googleapis';
 import { getAllAccounts, addAccount, removeAccount, setActiveAccount, getAccountCount } from '../services/accountStore';
+import { getStats } from '../services/storage';
 import { config } from '../config';
 import { logger } from '../logger';
 
@@ -121,6 +122,12 @@ router.get('/admin/auth/google', (req: Request, res: Response) => {
   });
 
   res.redirect(url);
+});
+
+router.get('/admin/stats', (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  const stats = getStats();
+  res.json({ success: true, data: stats });
 });
 
 export { router as adminRouter };

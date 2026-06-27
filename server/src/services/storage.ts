@@ -67,6 +67,24 @@ export function getAllApps(): AppData[] {
   });
 }
 
+export function getStats(): { totalSigned: number; totalErrors: number; totalUploaded: number; recentSigned: { id: string; name: string; signedAt: string }[] } {
+  const all = Array.from(apps.values());
+  const signed = all.filter((a) => a.status === 'signed');
+  const errors = all.filter((a) => a.status === 'error');
+  const uploaded = all.filter((a) => a.status === 'uploaded' || a.status === 'signing');
+
+  return {
+    totalSigned: signed.length,
+    totalErrors: errors.length,
+    totalUploaded: uploaded.length,
+    recentSigned: signed.slice(0, 20).map((a) => ({
+      id: a.id,
+      name: a.info?.name || a.originalName,
+      signedAt: a.signedAt || '',
+    })),
+  };
+}
+
 export function cleanupOldApps(): void {
   const now = Date.now();
   for (const [id, app] of apps.entries()) {

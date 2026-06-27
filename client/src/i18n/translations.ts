@@ -64,6 +64,10 @@ const translations = {
     adminAddFailed: 'Failed to add account',
     adminAddGoogle: 'Add Google Account',
     adminTotalStorage: 'Total Storage',
+    adminStatsSigned: 'Signed',
+    adminStatsErrors: 'Errors',
+    adminStatsPending: 'Pending',
+    adminRecentSigned: 'Recently signed',
   },
   ru: {
     subtitle: 'Подписание IPA и OTA-установка',
@@ -128,6 +132,10 @@ const translations = {
     adminAddFailed: 'Не удалось добавить аккаунт',
     adminAddGoogle: 'Добавить Google аккаунт',
     adminTotalStorage: 'Всего хранилища',
+    adminStatsSigned: 'Подписано',
+    adminStatsErrors: 'Ошибки',
+    adminStatsPending: 'Ожидание',
+    adminRecentSigned: 'Последние подписания',
   },
 } as const;
 

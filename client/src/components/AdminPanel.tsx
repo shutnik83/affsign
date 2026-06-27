@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, X, Trash2, Check, LogIn, Plus, HardDrive } from 'lucide-react';
+import { Settings, X, Trash2, Check, LogIn, Plus, HardDrive, FileCheck, AlertCircle, Clock } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 
 const API_BASE = '/api';
+
+interface Stats {
+  totalSigned: number;
+  totalErrors: number;
+  totalUploaded: number;
+  recentSigned: { id: string; name: string; signedAt: string }[];
+}
 
 interface AccountStorage {
   used: number;
@@ -51,8 +58,17 @@ export function AdminPanel() {
   const [passwordError, setPasswordError] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState<Stats | null>(null);
 
   const headers = () => ({ 'Content-Type': 'application/json', 'X-Admin-Password': password });
+
+  const loadStats = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/stats`, { headers: headers() });
+      const data = await res.json();
+      if (data.success) setStats(data.data);
+    } catch {}
+  };
 
   const loadAccounts = async () => {
     setLoading(true);
@@ -65,7 +81,7 @@ export function AdminPanel() {
     }
   };
 
-  useEffect(() => { if (loggedIn) loadAccounts(); }, [loggedIn]);
+  useEffect(() => { if (loggedIn) { loadAccounts(); loadStats(); } }, [loggedIn]);
 
   const handleLogin = async () => {
     setPasswordError('');
@@ -104,7 +120,7 @@ export function AdminPanel() {
 
   useEffect(() => {
     if (!loggedIn) return;
-    const interval = setInterval(loadAccounts, 5000);
+    const interval = setInterval(() => { loadAccounts(); loadStats(); }, 5000);
     return () => clearInterval(interval);
   }, [loggedIn]);
 
@@ -197,6 +213,50 @@ export function AdminPanel() {
                     >
                       <Plus className="w-4 h-4" /> {t('adminAddGoogle')}
                     </button>
+
+                    {stats && (
+                      <div className="rounded-xl glass glow-border p-4">
+                        <div className="grid grid-cols-3 gap-3 mb-3">
+                          <div className="text-center">
+                            <div className="flex items-center justify-center gap-1 mb-1">
+                              <FileCheck className="w-4 h-4 text-green-400" />
+                              <span className="text-lg font-bold text-green-400">{stats.totalSigned}</span>
+                            </div>
+                            <div className="text-[10px] text-[var(--text-muted)]">{t('adminStatsSigned')}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center gap-1 mb-1">
+                              <AlertCircle className="w-4 h-4 text-red-400" />
+                              <span className="text-lg font-bold text-red-400">{stats.totalErrors}</span>
+                            </div>
+                            <div className="text-[10px] text-[var(--text-muted)]">{t('adminStatsErrors')}</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center gap-1 mb-1">
+                              <Clock className="w-4 h-4 text-yellow-400" />
+                              <span className="text-lg font-bold text-yellow-400">{stats.totalUploaded}</span>
+                            </div>
+                            <div className="text-[10px] text-[var(--text-muted)]">{t('adminStatsPending')}</div>
+                          </div>
+                        </div>
+
+                        {stats.recentSigned.length > 0 && (
+                          <div className="border-t border-[var(--border)] pt-3">
+                            <div className="text-[10px] text-[var(--text-muted)] mb-2">{t('adminRecentSigned')}</div>
+                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                              {stats.recentSigned.map((item) => (
+                                <div key={item.id} className="flex items-center justify-between text-xs">
+                                  <span className="text-[var(--text-secondary)] truncate">{item.name}</span>
+                                  <span className="text-[var(--text-muted)] text-[10px] flex-shrink-0 ml-2">
+                                    {new Date(item.signedAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div className="border-t border-[var(--border)] pt-4">
                       <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-3">
