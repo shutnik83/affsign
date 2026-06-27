@@ -29,7 +29,7 @@ const NEWS_VERSION_KEY = 'affsign_news_version';
 const CURRENT_VERSION = NEWS[0]?.id || 1;
 
 export function NewsPanel() {
-  const { t, locale } = useLanguage();
+  const { locale } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [lastSeen, setLastSeen] = useState(() => {
     try { return parseInt(localStorage.getItem(NEWS_VERSION_KEY) || '0', 10); } catch { return 0; }
