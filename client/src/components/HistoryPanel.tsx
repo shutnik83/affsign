@@ -20,7 +20,7 @@ export function HistoryPanel() {
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-400 rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[var(--cyan)] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
@@ -36,7 +36,7 @@ export function HistoryPanel() {
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t('signingHistory')}</h2>
-        <button onClick={loadHistory} className="p-2 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+        <button onClick={loadHistory} className="p-2 rounded-full glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -46,7 +46,7 @@ export function HistoryPanel() {
             className="rounded-2xl glass glow-border p-5"
           >
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[var(--bg-hover)] flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--bg-hover)] flex items-center justify-center overflow-hidden flex-shrink-0 border border-[var(--border)]">
                 {app.info?.iconBase64 ? <img src={`data:image/png;base64,${app.info.iconBase64}`} alt="" className="w-full h-full object-cover" /> : <span className="text-lg">📱</span>}
               </div>
               <div className="flex-1 min-w-0">
@@ -63,18 +63,18 @@ export function HistoryPanel() {
               <div className="flex items-center gap-2 flex-shrink-0">
                 {app.status === 'signed' && (
                   <>
-                    <a href={getDownloadUrl(app.id)} className="p-2 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" title={t('downloadIPA')}>
+                    <a href={getDownloadUrl(app.id)} className="p-2 rounded-full glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" title={t('downloadIPA')}>
                       <Download className="w-4 h-4" />
                     </a>
                     {app.otaLink && (
-                      <a href={app.otaLink} className="p-2 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" title={t('install')}>
+                      <a href={app.otaLink} className="p-2 rounded-full glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" title={t('install')}>
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
                   </>
                 )}
                 <button onClick={() => handleDelete(app.id)} disabled={deleting === app.id}
-                  className="p-2 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-red-400 transition-colors disabled:opacity-50">
+                  className="p-2 rounded-full glass glow-border text-[var(--text-secondary)] hover:text-red-400 transition-colors disabled:opacity-50">
                   {deleting === app.id ? <div className="w-4 h-4 border-2 border-[var(--text-secondary)] border-t-transparent rounded-full animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 </button>
               </div>

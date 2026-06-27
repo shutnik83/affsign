@@ -16,13 +16,13 @@ export function SigningPanel({ canSign, isSigning, onSign, onReset, hasResult }:
     <div className="space-y-3">
       <motion.button
         whileHover={canSign ? { scale: 1.01 } : {}}
-        whileTap={canSign ? { scale: 0.99 } : {}}
+        whileTap={canSign ? { scale: 0.98 } : {}}
         onClick={onSign}
         disabled={!canSign}
         className={`w-full py-4 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition-all duration-300 ${
           canSign
-            ? 'btn-glass shadow-lg shadow-blue-500/20 text-white'
-            : 'glass text-[var(--text-muted)] cursor-not-allowed opacity-50'
+            ? 'btn-primary text-white'
+            : 'glass text-[var(--text-muted)] cursor-not-allowed opacity-40'
         }`}
       >
         {isSigning ? (
@@ -32,7 +32,7 @@ export function SigningPanel({ canSign, isSigning, onSign, onReset, hasResult }:
         )}
       </motion.button>
       {hasResult && (
-        <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+        <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
           onClick={onReset}
           className="w-full py-3 rounded-2xl font-medium text-sm flex items-center justify-center gap-2 glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all duration-200"
         >

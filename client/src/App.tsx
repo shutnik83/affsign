@@ -169,60 +169,61 @@ export default function App() {
   const canSign = !!(ipaData && p12Data && provisionData && p12Password) && !isSigning;
 
   return (
-    <div className="min-h-screen text-[var(--text-primary)] transition-colors duration-300 relative overflow-hidden">
-      <div className="fixed left-3 top-1/2 -translate-y-1/2 -rotate-90 origin-center text-blue-500/30 dark:text-blue-400/20 text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none whitespace-nowrap z-0">
+    <div className="min-h-screen text-[var(--text-primary)] relative">
+      <div className="fixed left-3 top-1/2 -translate-y-1/2 -rotate-90 origin-center text-[var(--cyan)] text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none whitespace-nowrap z-0 opacity-20">
         катя я тебя люблю ♥
       </div>
-      <div className="fixed right-3 top-1/2 -translate-y-1/2 rotate-90 origin-center text-blue-500/30 dark:text-blue-400/20 text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none whitespace-nowrap z-0">
+      <div className="fixed right-3 top-1/2 -translate-y-1/2 rotate-90 origin-center text-[var(--cyan)] text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none whitespace-nowrap z-0 opacity-20">
         катя я тебя люблю ♥
       </div>
-      <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8 relative z-10">
+
+      <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8 relative z-10">
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12 relative"
+          className="text-center mb-8 relative"
         >
           <div className="absolute top-0 left-0 flex items-center gap-2">
             <NewsPanel />
             <button
               onClick={() => window.open('https://t.me/Isleepwithmylittlesister', '_blank')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all text-xs"
               title={t('buyCertificate')}
             >
-              <ShoppingCart className="w-4 h-4" />
-              <span className="text-xs font-medium hidden sm:inline">{t('buyCertificate')}</span>
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t('buyCertificate')}</span>
             </button>
           </div>
           <div className="absolute top-0 right-0 flex items-center gap-2">
             <button
               onClick={toggleLocale}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all text-xs"
               title={locale === 'en' ? 'Русский' : 'English'}
             >
-              <Globe className="w-4 h-4" />
-              <span className="text-xs font-medium">{locale.toUpperCase()}</span>
+              <Globe className="w-3.5 h-3.5" />
+              <span>{locale.toUpperCase()}</span>
             </button>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+              className="p-2 rounded-full glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
             </button>
           </div>
 
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-              <Shield className="w-6 h-6 text-white" />
+          <div className="inline-flex items-center gap-3 mb-3">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[var(--cyan)] to-blue-600 flex items-center justify-center shadow-[0_0_25px_var(--cyan-glow)]">
+              <Shield className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-4xl font-bold tracking-tight">AffSign</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-[0_0_20px_var(--cyan-glow)]">
+              AffSign
+            </h1>
           </div>
-          <p className="text-[var(--text-secondary)] text-lg">{t('subtitle')}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{t('subtitle')}</p>
         </motion.header>
 
-        <div className="flex justify-center gap-2 mb-8">
-          <button
-            className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200 btn-glass shadow-lg shadow-blue-500/20"
-          >
+        <div className="flex justify-center mb-8">
+          <button className="flex items-center gap-2 px-8 py-3 rounded-full text-sm font-semibold btn-primary">
             <FileUp className="w-4 h-4" />
             {t('signIPA')}
           </button>
@@ -231,31 +232,33 @@ export default function App() {
         <AnimatePresence mode="wait">
           <motion.div
             key="sign"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
           >
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 rounded-xl glass border border-red-500/30 flex items-center justify-between"
-                >
-                  <span className="text-red-400 text-sm">{error}</span>
-                  <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300">
-                    <X className="w-4 h-4" />
-                  </button>
-                </motion.div>
-              )}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 rounded-2xl glass border border-red-500/30 flex items-center justify-between"
+                style={{ boxShadow: '0 0 20px rgba(239,68,68,0.15)' }}
+              >
+                <span className="text-red-400 text-sm">{error}</span>
+                <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300">
+                  <X className="w-4 h-4" />
+                </button>
+              </motion.div>
+            )}
 
+            <div className="glass-solid glow-border rounded-3xl p-6 sm:p-8 mb-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <FileUploadZone label={t('ipaFile')} accept=".ipa" onDrop={handleIPADrop} progress={uploadProgress.ipa} loaded={!!ipaData} />
                   <FileUploadZone label={t('p12Certificate')} accept=".p12" onDrop={handleP12Drop} progress={uploadProgress.p12} loaded={!!p12Data} />
                   <FileUploadZone label={t('mobileProvision')} accept=".mobileprovision,.provisionprofile" onDrop={handleProvisionDrop} progress={uploadProgress.provision} loaded={!!provisionData} />
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-2 uppercase tracking-wider">
                       {t('p12Password')}
                     </label>
                     <input
@@ -263,27 +266,29 @@ export default function App() {
                       value={p12Password}
                       onChange={(e) => setP12Password(e.target.value)}
                       placeholder={t('enterPassword')}
-                      className="w-full px-4 py-3 rounded-xl glass glow-border text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                      className="w-full px-4 py-3 rounded-2xl glass glow-border text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--cyan)] focus:shadow-[0_0_20px_var(--cyan-dim)] transition-all text-sm"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                   {ipaData && <AppInfoCard info={ipaData.info} />}
                   {signResult?.certificate && <CertificateInfoCard cert={signResult.certificate} />}
                   <SigningPanel canSign={canSign} isSigning={isSigning} onSign={handleSign} onReset={handleReset} hasResult={!!signResult} />
                 </div>
               </div>
+            </div>
 
-              {signResult && (
-                <div className="mt-8">
-                  <ResultPanel result={signResult} />
-                </div>
-              )}
-            </motion.div>
+            {signResult && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <ResultPanel result={signResult} />
+              </motion.div>
+            )}
+          </motion.div>
         </AnimatePresence>
       </div>
-      <div className="text-center pb-6 text-blue-500/30 dark:text-blue-400/20 text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none">
+
+      <div className="text-center pb-6 text-[var(--cyan)] text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none opacity-20">
         катя я тебя люблю ♥
       </div>
       <AdminPanel />

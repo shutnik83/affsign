@@ -144,13 +144,13 @@ export function AdminPanel() {
   const totalUsed = accounts.reduce((s, a) => s + (a.storage?.usedBytes || 0), 0);
   const totalSpace = accounts.reduce((s, a) => s + (a.storage?.totalBytes || 0), 0);
 
-  const inputClass = "w-full px-3 py-2.5 rounded-xl glass glow-border text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
+  const inputClass = "w-full px-3 py-2.5 rounded-2xl glass glow-border text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm focus:border-[var(--cyan)] focus:shadow-[0_0_15px_var(--cyan-dim)] transition-all";
 
   return (
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full btn-glass shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center hover:scale-110"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full btn-primary shadow-[0_0_25px_var(--cyan-glow)] transition-all flex items-center justify-center hover:scale-110"
       >
         <Settings className="w-5 h-5" />
       </button>
@@ -168,7 +168,7 @@ export function AdminPanel() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="glass-solid glow-border rounded-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+              className="glass-solid glow-border rounded-3xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
@@ -193,7 +193,7 @@ export function AdminPanel() {
                     {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
                     <button
                       onClick={handleLogin}
-                      className="w-full py-3 rounded-xl btn-glass font-medium text-sm flex items-center justify-center gap-2"
+                      className="w-full py-3 rounded-2xl btn-primary font-medium text-sm flex items-center justify-center gap-2"
                     >
                       <LogIn className="w-4 h-4" /> {t('adminLogin')}
                     </button>
@@ -216,7 +216,7 @@ export function AdminPanel() {
 
                     <button
                       onClick={handleAddGoogle}
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-medium text-sm hover:from-blue-500 hover:to-cyan-400 transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+                      className="w-full py-3 rounded-2xl btn-primary font-medium text-sm flex items-center justify-center gap-2"
                     >
                       <Plus className="w-4 h-4" /> {t('adminAddGoogle')}
                     </button>

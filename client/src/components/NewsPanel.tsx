@@ -49,7 +49,7 @@ export function NewsPanel() {
     <>
       <button
         onClick={handleOpen}
-        className="relative p-2 rounded-xl glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+        className="relative p-2 rounded-full glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
         title={locale === 'ru' ? 'Новости' : 'News'}
       >
         <Newspaper className="w-4 h-4" />
@@ -71,7 +71,7 @@ export function NewsPanel() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="glass-solid glow-border rounded-2xl w-full max-w-md max-h-[70vh] overflow-hidden flex flex-col"
+              className="glass-solid glow-border rounded-3xl w-full max-w-md max-h-[70vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between p-5 border-b border-[var(--border)]">
