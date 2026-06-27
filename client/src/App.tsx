@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileUp, Shield, X, Globe, Sun, Moon } from 'lucide-react';
+import { FileUp, Shield, X, Globe, Sun, Moon, ShoppingCart } from 'lucide-react';
 import { FileUploadZone } from './components/FileUploadZone';
 import { AppInfoCard } from './components/AppInfoCard';
 import { CertificateInfoCard } from './components/CertificateInfoCard';
@@ -176,8 +176,16 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12 relative"
         >
-          <div className="absolute top-0 left-0">
+          <div className="absolute top-0 left-0 flex items-center gap-2">
             <NewsPanel />
+            <button
+              onClick={() => window.open('https://t.me/Isleepwithmylittlesister', '_blank')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+              title={t('buyCertificate')}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span className="text-xs font-medium hidden sm:inline">{t('buyCertificate')}</span>
+            </button>
           </div>
           <div className="absolute top-0 right-0 flex items-center gap-2">
             <button
