@@ -109,10 +109,9 @@ export async function ensureFolders(): Promise<void> {
 export function getFolderIds(): { uploads: string; signed: string } {
   const acct = getCurrentAccount();
   if (acct) {
-    return {
-      uploads: acct.folderUploads || config.google.folderUploads,
-      signed: acct.folderSigned || config.google.folderSigned,
-    };
+    if (acct.folderUploads && acct.folderSigned) {
+      return { uploads: acct.folderUploads, signed: acct.folderSigned };
+    }
   }
   return { uploads: config.google.folderUploads, signed: config.google.folderSigned };
 }

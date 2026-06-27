@@ -1,18 +1,17 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileUp, Shield, History, X, Globe, Sun, Moon } from 'lucide-react';
+import { FileUp, Shield, X, Globe, Sun, Moon } from 'lucide-react';
 import { FileUploadZone } from './components/FileUploadZone';
 import { AppInfoCard } from './components/AppInfoCard';
 import { CertificateInfoCard } from './components/CertificateInfoCard';
 import { SigningPanel } from './components/SigningPanel';
 import { ResultPanel } from './components/ResultPanel';
-import { HistoryPanel } from './components/HistoryPanel';
 import { AdminPanel } from './components/AdminPanel';
 import { uploadFile, signApp, saveToHistory } from './api/client';
 import { useLanguage } from './i18n/LanguageContext';
 import { useTheme } from './i18n/ThemeContext';
 
-type Tab = 'sign' | 'history';
+type Tab = 'sign';
 
 interface IPAData {
   id: string;
@@ -57,7 +56,6 @@ interface SignResult {
 export default function App() {
   const { t, locale, toggleLocale } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<Tab>('sign');
   const [ipaData, setIpaData] = useState<IPAData | null>(null);
   const [p12Data, setP12Data] = useState<P12Data | null>(null);
   const [provisionData, setProvisionData] = useState<ProvisionData | null>(null);
@@ -208,37 +206,21 @@ export default function App() {
         <div className="flex justify-center gap-2 mb-8">
           <button
             onClick={() => setActiveTab('sign')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
-              activeTab === 'sign'
-                ? 'btn-glass shadow-lg shadow-blue-500/20'
-                : 'glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200 btn-glass shadow-lg shadow-blue-500/20"
           >
             <FileUp className="w-4 h-4" />
             {t('signIPA')}
           </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
-              activeTab === 'history'
-                ? 'btn-glass shadow-lg shadow-blue-500/20'
-                : 'glass glow-border text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <History className="w-4 h-4" />
-            {t('history')}
-          </button>
         </div>
 
         <AnimatePresence mode="wait">
-          {activeTab === 'sign' ? (
-            <motion.div
-              key="sign"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.2 }}
-            >
+          <motion.div
+            key="sign"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2 }}
+          >
               {error && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -284,17 +266,6 @@ export default function App() {
                 </div>
               )}
             </motion.div>
-          ) : (
-            <motion.div
-              key="history"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <HistoryPanel />
-            </motion.div>
-          )}
         </AnimatePresence>
       </div>
       <AdminPanel />
