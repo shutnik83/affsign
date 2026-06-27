@@ -169,8 +169,14 @@ export default function App() {
   const canSign = !!(ipaData && p12Data && provisionData && p12Password) && !isSigning;
 
   return (
-    <div className="min-h-screen text-[var(--text-primary)] transition-colors duration-300">
-      <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen text-[var(--text-primary)] transition-colors duration-300 relative overflow-hidden">
+      <div className="fixed left-3 top-1/2 -translate-y-1/2 -rotate-90 origin-center text-blue-500/30 dark:text-blue-400/20 text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none whitespace-nowrap z-0">
+        катя я тебя люблю ♥
+      </div>
+      <div className="fixed right-3 top-1/2 -translate-y-1/2 rotate-90 origin-center text-blue-500/30 dark:text-blue-400/20 text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none whitespace-nowrap z-0">
+        катя я тебя люблю ♥
+      </div>
+      <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8 relative z-10">
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -276,6 +282,9 @@ export default function App() {
               )}
             </motion.div>
         </AnimatePresence>
+      </div>
+      <div className="text-center pb-6 text-blue-500/30 dark:text-blue-400/20 text-[10px] font-semibold tracking-[0.4em] pointer-events-none select-none">
+        катя я тебя люблю ♥
       </div>
       <AdminPanel />
     </div>
