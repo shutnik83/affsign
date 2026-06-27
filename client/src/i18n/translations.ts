@@ -68,6 +68,9 @@ const translations = {
     adminStatsErrors: 'Errors',
     adminStatsPending: 'Pending',
     adminRecentSigned: 'Recently signed',
+    adminActive: 'Active',
+    adminClearStorage: 'Clear storage',
+    adminConfirmClear: 'Delete ALL files from this Google Drive account? This cannot be undone.',
   },
   ru: {
     subtitle: 'Подписание IPA и OTA-установка',
@@ -136,6 +139,9 @@ const translations = {
     adminStatsErrors: 'Ошибки',
     adminStatsPending: 'Ожидание',
     adminRecentSigned: 'Последние подписания',
+    adminActive: 'Активен',
+    adminClearStorage: 'Очистить хранилище',
+    adminConfirmClear: 'Удалить ВСЕ файлы с этого Google Drive аккаунта? Это нельзя отменить.',
   },
 } as const;
 

@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { google } from 'googleapis';
-import { getAllAccounts, addAccount, removeAccount, setActiveAccount, getAccountCount } from '../services/accountStore';
+import { getAllAccounts, addAccount, removeAccount, setActiveAccount, getAccountCount, getActiveAccountId } from '../services/accountStore';
 import { getStats } from '../services/storage';
+import { deleteFile, getFolderIds } from '../services/googleDrive';
 import { config } from '../config';
 import { logger } from '../logger';
 
@@ -58,14 +59,16 @@ router.post('/admin/login', (req: Request, res: Response) => {
 router.get('/admin/accounts', async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const accounts = getAllAccounts();
+  const activeId = getActiveAccountId();
   const data = await Promise.all(accounts.map(async (acct) => {
     const quota = await getStorageQuota(acct.refreshToken);
     return {
       id: acct.id, email: acct.email, folderUploads: acct.folderUploads,
       folderSigned: acct.folderSigned, addedAt: acct.addedAt, storage: quota,
+      isActive: acct.id === activeId,
     };
   }));
-  res.json({ success: true, data, count: getAccountCount() });
+  res.json({ success: true, data, count: getAccountCount(), activeId });
 });
 
 router.post('/admin/accounts', (req: Request, res: Response) => {
@@ -128,6 +131,42 @@ router.get('/admin/stats', (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const stats = getStats();
   res.json({ success: true, data: stats });
+});
+
+router.delete('/admin/accounts/:id/clear', async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  const accounts = getAllAccounts();
+  const acct = accounts.find((a) => a.id === req.params.id);
+  if (!acct) {
+    res.status(404).json({ success: false, error: 'Account not found' });
+    return;
+  }
+
+  try {
+    const auth = new (await import('googleapis')).google.auth.OAuth2(
+      config.google.oauthClientId, config.google.oauthClientSecret, `${config.protocol}://${config.domain}/api/auth/google/callback`
+    );
+    auth.setCredentials({ refresh_token: acct.refreshToken });
+    const drive = (await import('googleapis')).google.drive({ version: 'v3', auth });
+
+    let nextPageToken = '';
+    do {
+      const list = await drive.files.list({
+        pageSize: 100,
+        pageToken: nextPageToken || undefined,
+        fields: 'nextPageToken, files(id, name)',
+      });
+      for (const file of list.data.files || []) {
+        try { await drive.files.delete({ fileId: file.id! }); } catch {}
+      }
+      nextPageToken = list.data.nextPageToken || '';
+    } while (nextPageToken);
+
+    res.json({ success: true });
+  } catch (err) {
+    logger.error(`Failed to clear storage for ${acct.email}:`, err);
+    res.status(500).json({ success: false, error: 'Failed to clear storage' });
+  }
 });
 
 export { router as adminRouter };

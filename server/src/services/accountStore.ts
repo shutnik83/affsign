@@ -95,3 +95,9 @@ export function rotateAccount(): GoogleAccount | null {
   saveAccounts(data);
   return data.accounts[data.currentAccountIndex];
 }
+
+export function getActiveAccountId(): string | null {
+  const data = loadAccounts();
+  if (data.accounts.length === 0) return null;
+  return data.accounts[data.currentAccountIndex % data.accounts.length]?.id || null;
+}

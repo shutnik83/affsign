@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, X, Trash2, Check, LogIn, Plus, HardDrive, FileCheck, AlertCircle, Clock } from 'lucide-react';
+import { Settings, X, Trash2, Check, LogIn, Plus, HardDrive, FileCheck, AlertCircle, Clock, Eraser } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 
 const API_BASE = '/api';
@@ -26,6 +26,7 @@ interface Account {
   folderSigned: string;
   addedAt: string;
   storage: AccountStorage | null;
+  isActive: boolean;
 }
 
 function StorageBar({ storage }: { storage: AccountStorage | null }) {
@@ -131,6 +132,12 @@ export function AdminPanel() {
 
   const handleActivate = async (id: string) => {
     await fetch(`${API_BASE}/admin/accounts/${id}/activate`, { method: 'POST', headers: headers() });
+    loadAccounts();
+  };
+
+  const handleClearStorage = async (id: string) => {
+    if (!confirm(t('adminConfirmClear'))) return;
+    await fetch(`${API_BASE}/admin/accounts/${id}/clear`, { method: 'DELETE', headers: headers() });
     loadAccounts();
   };
 
@@ -269,14 +276,24 @@ export function AdminPanel() {
                       ) : (
                         <div className="space-y-3">
                           {accounts.map((acct) => (
-                            <div key={acct.id} className="rounded-xl glass glow-border p-4 space-y-3">
+                            <div key={acct.id} className={`rounded-xl glass glow-border p-4 space-y-3 ${acct.isActive ? 'ring-2 ring-green-500/40' : ''}`}>
                               <div className="flex items-center gap-3">
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-[var(--text-primary)] truncate">{acct.email}</div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-[var(--text-primary)] truncate">{acct.email}</span>
+                                    {acct.isActive && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 font-medium flex-shrink-0">
+                                        {t('adminActive')}
+                                      </span>
+                                    )}
+                                  </div>
                                   <div className="text-[10px] text-[var(--text-muted)]">{t('adminAdded')} {new Date(acct.addedAt).toLocaleDateString()}</div>
                                 </div>
                                 <button onClick={() => handleActivate(acct.id)} className="p-1.5 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-green-400 transition-colors" title={t('adminActivate')}>
                                   <Check className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleClearStorage(acct.id)} className="p-1.5 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-yellow-400 transition-colors" title={t('adminClearStorage')}>
+                                  <Eraser className="w-4 h-4" />
                                 </button>
                                 <button onClick={() => handleDelete(acct.id)} className="p-1.5 rounded-lg glass glow-border text-[var(--text-secondary)] hover:text-red-400 transition-colors" title={t('adminDelete')}>
                                   <Trash2 className="w-4 h-4" />
