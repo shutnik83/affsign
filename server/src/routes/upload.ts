@@ -5,7 +5,7 @@ import path from 'path';
 import { config } from '../config';
 import { createApp } from '../services/storage';
 import { extractIpa, parseAppInfo } from '../services/ipaParser';
-import { uploadBuffer, uploadFileStream, isGoogleDriveConfigured, getFolderIds } from '../services/googleDrive';
+import { uploadBuffer, uploadFileStream, isGoogleDriveConfigured, getFolderIds, ensureFolders } from '../services/googleDrive';
 import { logger } from '../logger';
 
 const router = Router();
@@ -57,6 +57,10 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     if (!req.file) {
       res.status(400).json({ success: false, error: 'No file uploaded' });
       return;
+    }
+
+    if (isGoogleDriveConfigured()) {
+      await ensureFolders();
     }
 
     const ext = path.extname(req.file.originalname).toLowerCase();

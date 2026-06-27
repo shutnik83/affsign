@@ -6,7 +6,7 @@ import { getApp, updateApp } from '../services/storage';
 import { parseP12Certificate, validateMobileProvision } from '../services/certificateParser';
 import { signIPA } from '../services/signer';
 import { generateQRCode } from '../services/otaGenerator';
-import { downloadToFile, uploadFileStream, isGoogleDriveConfigured, getFolderIds } from '../services/googleDrive';
+import { downloadToFile, uploadFileStream, isGoogleDriveConfigured, getFolderIds, ensureFolders } from '../services/googleDrive';
 import { logger } from '../logger';
 
 const router = Router();
@@ -132,6 +132,7 @@ router.post('/sign', async (req: Request, res: Response) => {
     let signedDriveFileId = 'local';
     let signedPublicUrl = '';
     if (isGoogleDriveConfigured()) {
+      await ensureFolders();
       const signedFile = await uploadFileStream(
         fs.createReadStream(signedIpaPath),
         `signed_${app.originalName}`,
