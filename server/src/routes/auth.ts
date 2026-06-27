@@ -37,18 +37,25 @@ router.get('/auth/google/callback', async (req: Request, res: Response) => {
     pendingAdminAuth.delete(stateStr);
 
     try {
+      const redirectUri = `${config.protocol}://${config.domain}/api/auth/google/callback`;
+      logger.info(`OAuth token exchange with redirectUri: ${redirectUri}`);
+
       const auth = new google.auth.OAuth2(
         config.google.oauthClientId,
         config.google.oauthClientSecret,
-        config.google.redirectUri
+        redirectUri
       );
 
       const { tokens } = await auth.getToken(code);
-      auth.setCredentials(tokens);
 
-      const oauth2 = google.oauth2({ version: 'v2', auth });
-      const userInfo = await oauth2.userinfo.get();
-      const email = userInfo.data.email || 'unknown';
+      let email = 'unknown';
+      if (tokens.id_token) {
+        try {
+          const parts = tokens.id_token.split('.');
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+          email = payload.email || 'unknown';
+        } catch {}
+      }
 
       const refreshToken = tokens.refresh_token || '';
       if (!refreshToken) {

@@ -106,10 +106,11 @@ router.get('/admin/auth/google', (req: Request, res: Response) => {
   const state = 'admin_' + Buffer.from(Date.now().toString()).toString('base64url');
   pendingAdminAuth.set(state, { password, createdAt: Date.now() });
 
+  const redirectUri = `${config.protocol}://${config.domain}/api/auth/google/callback`;
   const auth = new google.auth.OAuth2(
     config.google.oauthClientId,
     config.google.oauthClientSecret,
-    config.google.redirectUri
+    redirectUri
   );
 
   const url = auth.generateAuthUrl({
